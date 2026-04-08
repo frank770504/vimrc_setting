@@ -30,6 +30,7 @@ Plugin 'prabirshrestha/asyncomplete.vim'
 Plugin 'prabirshrestha/asyncomplete-lsp.vim'
 Plugin 'rhysd/vim-lsp-ale'
 Plugin 'madox2/vim-ai'
+Plugin 'madox2/vim-ai-provider-google'
 Plugin 'mtth/scratch.vim'
 Plugin 'iamcco/markdown-preview.nvim'
 
@@ -188,7 +189,7 @@ function! s:build_quickfix_list(lines)
 endfunction
 
 let g:fzf_action = {
-  \ 'ctrl-q': function('s:build_quickfix_list'),
+  \ 'ctrl-l': function('s:build_quickfix_list'),
   \ 'ctrl-t': 'tab split',
   \ 'ctrl-x': 'split',
   \ 'ctrl-v': 'vsplit' }
@@ -324,7 +325,7 @@ let g:vim_ai_complete = {
 \    "max_tokens": 0,
 \    "max_completion_tokens": 0,
 \    "temperature": 0.1,
-\    "request_timeout": 60,
+\    "request_timeout": 1000,
 \    "stream": 1,
 \    "enable_auth": 1,
 \    "token_file_path": "",
