@@ -4,9 +4,12 @@ filetype off                  " required
 set backspace=indent,eol,start
 set clipboard=unnamedplus
 
+"set verbose=1
+"set verbosefile=~/vim_debug.txt
+
 " set the runtime path to include Vundle and initialize
 set rtp+=~/.vim/bundle/Vundle.vim
-set rtp+=/usr/local/opt/fzf
+"set rtp+=/home/ywchen/.fzf/bin/fzf
 
 call vundle#begin()
 
@@ -134,16 +137,23 @@ nnoremap <Leader>%% :let @+ = expand('%:p')<CR>
 nnoremap <Leader>d "_d<CR>
 vnoremap <Leader>d "_d<CR>
 
-"nnoremap <C-k> <cmd>cnext<CR>zzk<CR>
-"nnoremap <C-j> <cmd>cprev<CR>zzk<CR>
+nnoremap <C-j> <cmd>cnext<CR>zz
+nnoremap <C-k> <cmd>cprev<CR>zz
+"nnoremap <C-j> <cmd>cnext<CR>
+"nnoremap <C-k> <cmd>cprev<CR>
 "nnoremap <Space>k <cmd>lnext<CR>zzk<CR>
 "nnoremap <Space>j <cmd>lprev<CR>zzk<CR>
 
 
 " for fzf
+"let $FZF_DEFAULT_COMMAND = 'rg --files --hidden --follow --glob "!.git/*"'
+"let $FZF_DEFAULT_COMMAND = 'rg --files --no-messages'
 nnoremap <Space>pf :Files<CR>
 nnoremap <Space>pb :Buffers<CR>
 nnoremap <Space>pt :Tags<CR>
+nnoremap <Space>pm :Maps<CR>
+nnoremap <Space>pw :Windows<CR>
+nnoremap <Space>pc :History:<CR>
 nnoremap <Space>pg :Commits<CR>
 function! FuzzyGrepLocal()
   call inputsave()
@@ -153,6 +163,57 @@ function! FuzzyGrepLocal()
 endfunction
 nnoremap <Space>ps :call FuzzyGrepLocal()<CR>
 nnoremap <C-p> :GFiles<CR>
+
+"function! s:build_quickfix_list(lines)
+"  call setqflist(map(copy(a:lines), '{ "filename": v:val, "lnum": 1 }'))
+"  copen
+"  cc
+"endfunction
+"
+"let g:fzf_action = {
+"  \ 'ctrl-e': 'wall | bdelete',
+"  \ 'ctrl-q': function('s:build_quickfix_list'),
+"  \ 'ctrl-t': 'tab split',
+"  \ 'ctrl-x': 'split',
+"  \ 'ctrl-v': 'vsplit' }
+
+" An action can be a reference to a function that processes selected lines
+function! s:build_quickfix_list(lines)
+  call setqflist(map(copy(a:lines), '{ "filename": v:val, "lnum": 1 }'))
+  copen
+  cc
+endfunction
+
+let g:fzf_action = {
+  \ 'ctrl-q': function('s:build_quickfix_list'),
+  \ 'ctrl-t': 'tab split',
+  \ 'ctrl-x': 'split',
+  \ 'ctrl-v': 'vsplit' }
+
+function! s:list_buffers()
+  redir => list
+  silent ls
+  redir END
+  return split(list, "\n")
+endfunction
+
+function! s:delete_buffers(lines)
+  execute 'bwipeout' join(map(a:lines, {_, line -> split(line)[0]}))
+endfunction
+
+command! BD call fzf#run(fzf#wrap({
+  \ 'source': s:list_buffers(),
+  \ 'sink*': { lines -> s:delete_buffers(lines) },
+  \ 'options': '--multi --reverse --bind ctrl-t:select-all+accept'
+\ }))
+
+
+" Path completion with custom source command
+inoremap <expr> <c-x><c-f> fzf#vim#complete#path('fd')
+inoremap <expr> <c-x><c-f> fzf#vim#complete#path('rg --files')
+
+" Word completion with custom spec with popup layout option
+inoremap <expr> <c-x><c-k> fzf#vim#complete#word({'window': { 'width': 0.2, 'height': 0.9, 'xoffset': 1 }})
 
 " for undotree
 nnoremap <Space>u :UndotreeToggle<CR>
@@ -384,7 +445,7 @@ let g:vim_ai_complete = {
 \    "max_tokens": 0,
 \    "max_completion_tokens": 0,
 \    "temperature": 0.1,
-\    "request_timeout": 20,
+\    "request_timeout": 60,
 \    "stream": 1,
 \    "enable_auth": 1,
 \    "token_file_path": "",
@@ -413,7 +474,7 @@ let g:vim_ai_edit = {
 \    "max_tokens": 0,
 \    "max_completion_tokens": 0,
 \    "temperature": 0.1,
-\    "request_timeout": 20,
+\    "request_timeout": 60,
 \    "stream": 1,
 \    "enable_auth": 1,
 \    "token_file_path": "",
