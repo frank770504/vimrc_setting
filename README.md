@@ -47,6 +47,7 @@ The `<Leader>` key is set to **Space**.
 | `<Leader>sd` | Clear search highlights |
 | `<Leader>y` | Yank to system clipboard |
 | `<Leader>p` | Paste from system clipboard |
+| `<Leader>dp` | Paste without overwriting yank register |
 | `<Leader>d` | Delete without affecting yank register |
 | `Ctrl + d / u` | Scroll down/up and center screen |
 | `n / N` | Next/Previous search match and center screen |

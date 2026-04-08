@@ -96,6 +96,7 @@ nnoremap N Nzz
 vnoremap J :m '>+1<CR>gv=gv
 vnoremap K :m '<-2<CR>gv=gv
 " Paste without overwriting register
+nnoremap <Leader>dp "_dp
 xnoremap <Leader>dp "_dp
 " Clipboard yank/paste
 nnoremap <Leader>o o<Esc>0"_Dk
