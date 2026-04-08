@@ -105,12 +105,51 @@ The `<Leader>` key is mapped to **Space**.
 | `<Leader>nc` | N/V | **New Tab Chat**: Open AI chat in a full-screen new tab. |
 
 ### 📦 Plugin Specifics
-| Mapping | Mode | Description |
-|---------|------|-------------|
-| `<Leader>u` | Normal | **Undotree**: Toggle the visual undo history sidebar. |
-| `<Leader>ac` | Normal | **CSV Arrange**: Formats CSV data into aligned columns. |
-| `<Leader>uac`| Normal | **CSV Unarrange**: Returns CSV data to its raw comma-separated format. |
-| `<Leader>git`| Normal | **Flog**: Opens the interactive Git graph viewer. |
+... (mappings table) ...
+
+---
+
+## 🌿 Fugitive (Git) Usage
+
+This configuration uses [vim-fugitive](https://github.com/tpope/vim-fugitive) for seamless Git integration.
+
+### 1. Stage and Commit
+- **Open Status**: Type `:G` or `:Git` to open the summary window.
+- **Stage/Unstage**: Hover over a file and press `s` to stage or `u` to unstage.
+- **Commit**: Press `cc` in the status window to open the commit message buffer. Write your message, save, and close (`:wq`) to finish.
+- **Push**: Type `:Git push`.
+- Use `:Flog` command to see the git graph
+
+### 2. Open a File at a Specific Commit
+To view the current file as it existed in a previous commit:
+```vim
+:Gedit <commit-hash>:%
+" Example: View file from 3 commits ago
+:Gedit HEAD~3:%
+```
+*Tip: `%` represents the current file.*
+
+### 3. Using the Diff Tool
+Fugitive integrates with Vim's `diff` mode to compare versions:
+- **Compare with Index**: `:Gdiffsplit` (shows your changes vs what is staged).
+- **Vertical Diff**: `:Gvdiffsplit`.
+- **Resolve Conflicts**: While in a merge, use `:Gdiffsplit!` to see the "target", "merge", and "base" versions simultaneously.
+
+### 4. Compare a File Between Branches/Commits
+To compare the current file with its version in another branch:
+```vim
+:Gdiffsplit <branch-name>
+" Example: Compare with main branch
+:Gdiffsplit main
+```
+
+### 5. Compare All Changes Between Two Commits/Branches
+To see all files that changed between two points and iterate through them:
+1. **Run Difftool**: `:Git difftool <commit1> <commit2>`
+2. **Browse Changes**: This populates the **Quickfix List**.
+   - `:copen`: Open the list of changed files.
+   - `Ctrl + j`: Move to the next changed file.
+   - `Ctrl + k`: Move to the previous changed file.
 
 ---
 
