@@ -16,7 +16,7 @@ Plugin 'VundleVim/Vundle.vim'
 " The following are examples of different formats supported.
 " Keep Plugin commands between vundle#begin/end.
 " plugin on GitHub repo
-Plugin 'majutsushi/tagbar'
+" Plugin 'majutsushi/tagbar'
 Plugin 'Yggdroot/indentLine'
 Plugin 'ntpeters/vim-better-whitespace'
 Plugin 'vim-airline/vim-airline'
@@ -35,6 +35,7 @@ Plugin 'prabirshrestha/asyncomplete-lsp.vim'
 Plugin 'rhysd/vim-lsp-ale'
 Plugin 'madox2/vim-ai'
 Plugin 'mtth/scratch.vim'
+Plugin 'iamcco/markdown-preview.nvim'
 
 " All of your Plugins must be added before the following line
 call vundle#end()            " required
@@ -117,13 +118,13 @@ nnoremap N Nkzz<CR>
 vnoremap J :m '>+1<CR>gv=gv
 vnoremap K :m '<-2<CR>gv=gv
 " able to paste the first yanked itmes again
-xnoremap <Leader>p "_dp<CR>
+xnoremap <Leader>dp "_dp<CR>
 " yank to the clipboard
 " yap is to yank whole paragraph
 nnoremap <Leader>o o<Esc>0"_Dk<CR>
 nnoremap <Leader>O O<Esc>0"_D<CR>
-nnoremap <Leader>cp "+p<CR>
-nnoremap <Leader>cP "+P<CR>
+nnoremap <Leader>p "+p<CR>
+nnoremap <Leader>P "+P<CR>
 nnoremap <Leader>y "+y<CR>
 nnoremap <Leader>yap "+yap<CR>
 nnoremap <Leader>Y "+Y<CR>
@@ -185,6 +186,9 @@ map <F11> :Tagbar<CR>
 let g:airline_powerline_fonts = 1
 " enable tabline
 let g:airline#extensions#tabline#enabled = 1
+" --- Airline Customization ---
+let g:airline#extensions#tabline#fnamemod = ':t' " Show only filename in tabs
+let g:airline_section_c = '%t'                   " Show only filename in status bar
 let g:airline#extensions#tabline#left_sep = ' '
 let g:airline#extensions#tabline#left_alt_sep = '|'
 " show tab number in tab line
@@ -210,9 +214,27 @@ let g:airline_symbols.branch = ''
 let g:airline_symbols.readonly = ''
 let g:airline_symbols.linenr = ''
 
+let g:airline#extensions#tabline#formatter = 'unique_tail_improved'
+let g:airline_section_c = '%{airline#util#wrap(airline#parts#file(), 0)}'
+
+function! CleanFugitivePath()
+    let l:path = expand('%:p')
+    " If it's a fugitive buffer, strip the 'fugitive://...//' part
+    if l:path =~ 'fugitive://'
+        return 'GIT: ' . expand('%:t')
+    endif
+    " Otherwise, just show the filename (tail)
+    return expand('%:t')
+endfunction
+
+" Tell airline to use our custom function for Section C (the middle part)
+let g:airline_section_c = '%{CleanFugitivePath()}'
+
+
 set laststatus=2
 
 set colorcolumn=80
+hi ColorColumn cterm=none ctermbg=0x444444 ctermfg=LightGray
 
 " for lsp
 if executable('pylsp-all')
@@ -429,7 +451,7 @@ let g:vim_ai_chat = {
 \    "max_tokens": 0,
 \    "max_completion_tokens": 0,
 \    "temperature": 1,
-\    "request_timeout": 20,
+\    "request_timeout": 300,
 \    "stream": 1,
 \    "enable_auth": 1,
 \    "token_file_path": "",
@@ -446,7 +468,6 @@ let g:vim_ai_chat = {
 \}
 autocmd FileType aichat setlocal textwidth=85
 
-
 " Notes:
 " ui.paste_mode
 " - if disabled code indentation will work but AI doesn't always respond with a code block
@@ -457,4 +478,23 @@ autocmd FileType aichat setlocal textwidth=85
 " - setting max tokens to 0 will exclude it from the OpenAI API request parameters, it is
 "   unclear/undocumented what it exactly does, but it seems to resolve issues when the model
 "   hits token limit, which respond with `OpenAI: HTTPError 400`
+
+" markdown
+"function OpenMarkdownPreview (url)
+"  execute "silent ! /home/ywchen/Documents/waterfox/waterfox-6.6.8/waterfox/waterfox --new-window " . a:url
+"endfunction
+"let g:mkdp_browserfunc = 'OpenMarkdownPreview'
+" function OpenMarkdownPreview (url)
+"   execute "silent ! microsoft-edge --new-window " . a:url
+" endfunction
+" let g:mkdp_browserfunc = 'OpenMarkdownPreview'
+
+
 syntax on
+
+let g:markdown_fenced_languages = ['python', 'cpp', 'javascript', 'bash', 'html', 'json']
+
+highlight DiffAdd    cterm=bold ctermfg=10 ctermbg=17 gui=none guifg=bg guibg=Red
+highlight DiffDelete cterm=bold ctermfg=10 ctermbg=17 gui=none guifg=bg guibg=Red
+highlight DiffChange cterm=bold ctermfg=10 ctermbg=17 gui=none guifg=bg guibg=Red
+highlight DiffText   cterm=bold ctermfg=10 ctermbg=88 gui=none guifg=bg guibg=Red
