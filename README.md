@@ -33,59 +33,84 @@ Open Vim and run:
 :PluginInstall
 ```
 
+Note: Markdown Preview needs to run `:call mkdp#util#install()` to install completely
+
 ---
 
-## 🚀 How to Use
+## 🚀 Detailed Command List
 
-### General Mappings
-The `<Leader>` key is set to **Space**.
+The `<Leader>` key is mapped to **Space**.
 
-| Mapping | Action |
-|---------|--------|
-| `<Leader>pv` | Open File Explorer (Netrw) |
-| `<Leader>nn` | Switch to the most recent buffer |
-| `<Leader>sd` | Clear search highlights |
-| `<Leader>y` | Yank to system clipboard |
-| `<Leader>p` | Paste from system clipboard |
-| `<Leader>dp` | Paste without overwriting yank register |
-| `<Leader>d` | Delete without affecting yank register |
-| `Ctrl + d / u` | Scroll down/up and center screen |
-| `n / N` | Next/Previous search match and center screen |
-| `J / K` (Visual) | Move selected lines up/down |
+### 🛠️ General Editor Mappings
+| Mapping | Mode | Description |
+|---------|------|-------------|
+| `<Leader>pv` | Normal | **File Explorer**: Opens Vim's built-in `:Ex` (netrw) explorer. |
+| `<Leader>nn` | Normal | **Buffer Switch**: Rapidly toggle between the two most recent buffers. |
+| `<Leader>sd` | Normal | **Clear Highlights**: Removes the yellow search highlight from the screen. |
+| `J` | Normal | **Join Lines**: Joins the line below to the current one while keeping the cursor in place (using mark `z`). |
+| `Ctrl + d` | Normal | **Scroll Down**: Scrolls half a page down and centers the cursor on the screen (`zz`). |
+| `Ctrl + u` | Normal | **Scroll Up**: Scrolls half a page up and centers the cursor on the screen (`zz`). |
+| `n` | Normal | **Search Next**: Goes to next match and centers the screen. |
+| `N` | Normal | **Search Prev**: Goes to previous match and centers the screen. |
+| `J` | Visual | **Move Selection Down**: Moves the highlighted block of text down one line. |
+| `K` | Visual | **Move Selection Up**: Moves the highlighted block of text up one line. |
+| `Ctrl + j` | Normal | **Quickfix Next**: Move to the next item in the quickfix list and center screen. |
+| `Ctrl + k` | Normal | **Quickfix Prev**: Move to the previous item in the quickfix list and center screen. |
+| `<Leader>h` | Normal | **Word Highlight**: Toggles a persistent highlight on the word under the cursor. |
 
-### Plugins & Features
+### 📋 Clipboard & Registers
+| Mapping | Mode | Description |
+|---------|------|-------------|
+| `<Leader>y` | Normal | **Yank to Clipboard**: Copies the selection to the system clipboard (`"+y`). |
+| `<Leader>Y` | Normal | **Yank Line to Clipboard**: Copies the entire line to the system clipboard. |
+| `<Leader>yap`| Normal | **Yank Paragraph**: Copies the current paragraph to the system clipboard. |
+| `<Leader>p` | Normal | **Paste from Clipboard**: Pastes text from the system clipboard. |
+| `<Leader>dp` | N/V | **Safe Paste**: Pastes from the default register without overwriting it with the deleted text. Uses the black hole register (`"_dp`). |
+| `<Leader>d` | N/V | **Delete to Black Hole**: Deletes text without moving it to the yank register. |
+| `<Leader>o` | Normal | **Smart New Line Below**: Creates an empty line below without moving the cursor or affecting registers. |
+| `<Leader>O` | Normal | **Smart New Line Above**: Creates an empty line above without moving the cursor or affecting registers. |
+| `<Leader>%` | Normal | **Copy Relative Path**: Copies the relative path of the current file to the clipboard. |
+| `<Leader>%%`| Normal | **Copy Absolute Path**: Copies the full system path of the current file to the clipboard. |
 
-#### 🔍 Fuzzy Finding (FZF)
-| Mapping | Action |
-|---------|--------|
-| `Ctrl + p` | Find files in Git repo |
-| `<Leader>pf` | Find files |
-| `<Leader>ps` | Grep search (Rg) |
-| `<Leader>pb` | List open buffers |
-| `<Leader>pg` | List Git commits |
+### 🔍 Fuzzy Finding (FZF)
+| Mapping | Mode | Description |
+|---------|------|-------------|
+| `Ctrl + p` | Normal | **Git Files**: Search for files tracked by Git in the current repository. |
+| `<Leader>pf` | Normal | **All Files**: Search for any file in the current directory. |
+| `<Leader>ps` | Normal | **Grep Search**: Prompt for a string and search through all files using `ripgrep`. |
+| `<Leader>pb` | Normal | **Buffers**: Search and switch between open buffers. |
+| `<Leader>pg` | Normal | **Commits**: Browse Git commit history. |
+| `<Leader>pc` | Normal | **Command History**: Search through your previous Vim commands. |
+| `Ctrl + x / v`| FZF | **Split View**: Open selected file in a horizontal or vertical split. |
+| `Ctrl + l` | FZF | **Quickfix**: Push all selected items from FZF into the Quickfix list. |
 
-#### 💻 LSP (Language Server Protocol)
-IDE-like features (definitions, references, renaming) via `vim-lsp`.
-- `<Leader>gd`: Go to definition.
-- `<Leader>gr`: Find references.
-- `<Leader>gn`: Rename symbol.
-- `<Leader><Leader>`: Hover for documentation.
-- `<Leader>ga`: Code actions.
+### 💻 LSP & IDE Features
+| Mapping | Mode | Description |
+|---------|------|-------------|
+| `<Leader>gd` | Normal | **Definition**: Jump to the definition of the symbol. |
+| `<Leader>gr` | Normal | **References**: List all references of the symbol. |
+| `<Leader>gn` | Normal | **Rename**: Rename all occurrences of the symbol across the project. |
+| `<Leader><Leader>`| Normal | **Hover**: Show type information or documentation in a popup. |
+| `<Leader>ga` | Normal | **Code Actions**: Show available LSP actions (e.g., auto-imports). |
+| `<Leader>gi` | Normal | **Implementation**: Jump to the interface implementation. |
+| `<Leader>g[` / `g]`| Normal | **Diagnostics**: Jump to the previous/next error or warning. |
+| `<Leader>pd` | Normal | **Peek Definition**: View definition in a small popup without leaving current line. |
 
-#### 🌿 Git (Fugitive & Flog)
-- `<Leader>git`: Open Flog (Git graph).
-- Status line shows the current branch and clean Git paths.
+### 🤖 AI Assistance (Vim-AI / Gemini)
+| Mapping | Mode | Description |
+|---------|------|-------------|
+| `<Leader>a` | N/V | **AI Prompt**: Open a prompt to generate code or text. |
+| `<Leader>s` | N/V | **AI Edit**: Ask the AI to modify selected text (e.g., "refactor this function"). |
+| `<Leader>c` | N/V | **AI Chat**: Open a chat window with the AI. |
+| `<Leader>nc` | N/V | **New Tab Chat**: Open AI chat in a full-screen new tab. |
 
-#### 🤖 AI Assistance (Vim-AI)
-- `<Leader>a`: AI completion/prompt.
-- `<Leader>s`: AI Edit (e.g., fix grammar/spelling).
-- `<Leader>c`: AI Chat.
-- `<Leader>nc`: AI Chat in a new tab.
-
-#### 📝 Others
-- **Undotree:** `<Leader>u` to toggle undo history visualizer.
-- **CSV:** `<Leader>ac` to arrange CSV columns.
-- **Quickfix:** `Ctrl + j / k` to navigate through quickfix list.
+### 📦 Plugin Specifics
+| Mapping | Mode | Description |
+|---------|------|-------------|
+| `<Leader>u` | Normal | **Undotree**: Toggle the visual undo history sidebar. |
+| `<Leader>ac` | Normal | **CSV Arrange**: Formats CSV data into aligned columns. |
+| `<Leader>uac`| Normal | **CSV Unarrange**: Returns CSV data to its raw comma-separated format. |
+| `<Leader>git`| Normal | **Flog**: Opens the interactive Git graph viewer. |
 
 ---
 
