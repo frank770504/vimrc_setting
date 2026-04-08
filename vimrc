@@ -267,6 +267,71 @@ augroup lsp_install
     autocmd User lsp_buffer_enabled call s:on_lsp_buffer_enabled()
 augroup END
 
+function! LspRestart() abort
+    let l:servers = lsp#get_allowed_servers(bufnr('%'))
+    echom "DEBUG: l:servers = " . string(l:servers)
+
+    if empty(l:servers)
+        echo "No LSP servers found for this buffer."
+        return
+    endif
+
+    for l:server in l:servers
+        echom "DEBUG: stopping l:server = " . l:server
+        call lsp#stop_server(l:server)
+    endfor
+
+    call lsp#activate()
+    echo "Restarted LSP: " . join(l:servers, ', ')
+endfunction
+
+" Map the function to <leader>lr
+nnoremap <leader>lr :call LspRestart()<CR>
+
+function! LspReconnect() abort
+    " 1. Save the current filetype
+    let l:ft = &filetype
+
+    " 2. Re-set the filetype to itself.
+    " This triggers the 'FileType' autocommand which vim-lsp listens to.
+    execute 'set filetype=' . l:ft
+
+    " 3. Explicitly call activate for the current buffer
+    call lsp#activate()
+
+    echo "Soft reconnected LSP for " . l:ft . " (Buffer " . bufnr('%') . ")"
+endfunction
+
+" Mapping for Soft Reconnect
+nnoremap <leader>lc :call LspReconnect()<CR>
+
+function! ResetCompletion() abort
+    " 1. Force set the omnifunc again (the most likely culprit)
+    setlocal omnifunc=lsp#complete
+
+    " 2. Tell asyncomplete to refresh its source cache for this buffer
+    if exists('*asyncomplete#force_refresh')
+        call asyncomplete#force_refresh()
+    endif
+
+    echo "Completion re-initialized"
+endfunction
+
+function! LspAsyncompleteDeepReset() abort
+    " 1. Unregister the LSP source to clear any stale IDs
+    " This name must match exactly what you saw in asyncomplete#get_source_names()
+    silent! call asyncomplete#unregister_source('asyncomplete_lsp_clangd')
+
+    " 2. Re-trigger the 'LspSetup' event.
+    " asyncomplete-lsp listens for this to register itself.
+    doautocmd User lsp_setup
+
+    " 3. Force a refresh
+    call asyncomplete#force_refresh()
+
+    echo "Asyncomplete-LSP source re-registered"
+endfunction
+
 " --- ALE ---
 let g:ale_python_pylint_options = '--enable=all --disable=no-member'
 let g:ale_fixers = {
@@ -294,6 +359,8 @@ autocmd! CompleteDone * if pumvisible() == 0 | pclose | endif
 inoremap <expr> <Tab>   pumvisible() ? "\<C-n>" : "\<Tab>"
 inoremap <expr> <S-Tab> pumvisible() ? "\<C-p>" : "\<S-Tab>"
 inoremap <expr> <cr>    pumvisible() ? asyncomplete#close_popup() : "\<cr>"
+
+imap <c-space> <Plug>(asyncomplete_force_refresh)
 
 " --- Vim-AI ---
 let g:vim_ai_token_file_path = '~/.config/openai.token'
