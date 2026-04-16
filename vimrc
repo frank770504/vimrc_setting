@@ -99,7 +99,7 @@ vnoremap K :m '<-2<CR>gv=gv
 nnoremap <Leader>dp "_dp
 xnoremap <Leader>dp "_dp
 " Clipboard yank/paste
-nnoremap <Leader>o o<Esc>0"_Dk
+nnoremap <Leader>o o<Esc>0"_D
 nnoremap <Leader>O O<Esc>0"_D
 nnoremap <Leader>p "+p
 nnoremap <Leader>P "+P
@@ -164,6 +164,36 @@ let g:airline_section_c = '%{CleanFugitivePath()}'
 if has("gui_running")
   set guifont=MesloLGSDZForPowerline-Regular:h16
 endif
+
+" Function to delete local branches already merged into current HEAD
+function! CleanMergedBranches()
+    " 1. Get the list of merged branches
+    " Filters out the current branch (*) and common protected branches
+    let l:merged_cmd = "git branch --merged | grep -v '*' | grep -vE '(\\s+)(master|main|develop|dev)$'"
+    let l:merged_branches = system(l:merged_cmd)
+
+    " 2. Check if the command returned any branches
+    if v:shell_error != 0 || empty(trim(l:merged_branches))
+        echo "No merged branches to clean."
+        return
+    endif
+
+    " 3. Convert the string to a list and trim whitespace
+    let l:branch_list = split(l:merged_branches, '\n')
+    let l:branch_list = map(l:branch_list, 'trim(v:val)')
+
+    " 4. Execute deletion via Fugitive's :Git wrapper
+    for l:branch in l:branch_list
+        execute 'Git branch -d ' . l:branch
+    endfor
+
+    " 5. Refresh the display and report results
+    redraw!
+    echo "Deleted branches: " . join(l:branch_list, ", ")
+endfunction
+
+" Link the function to a custom command
+command! Gclean call CleanMergedBranches()
 
 " --- FZF ---
 nnoremap <Leader>pf :Files<CR>
@@ -239,6 +269,22 @@ if executable('pylsp-all')
         \ 'allowlist': ['python', 'python3'],
         \ })
 endif
+"if executable('pylsp-all')
+"    au User lsp_setup call lsp#register_server({
+"        \ 'name': 'pylsp-all',
+"        \ 'cmd': {server_info->['pylsp-all']},
+"        \ 'allowlist': ['python', 'python3'],
+"        \ 'workspace_config': {
+"        \   'pylsp': {
+"        \     'plugins': {
+"        \       'jedi': {
+"        \         'environment': getcwd() . '/.venv'
+"        \       }
+"        \     }
+"        \   }
+"        \ }
+"        \ })
+"endif
 
 function! s:on_lsp_buffer_enabled() abort
     setlocal omnifunc=lsp#complete
@@ -332,14 +378,28 @@ function! LspAsyncompleteDeepReset() abort
 
     echo "Asyncomplete-LSP source re-registered"
 endfunction
-
 " --- ALE ---
+"let g:ale_python_executable = getcwd() . '/.venv/bin/python'
+
+" Ensure ALE uses the venv for pylint and other tools
+"let g:ale_python_pylint_executable = 'uv'
+"let g:ale_python_pylint_use_global = 0
 let g:ale_python_pylint_options = '--enable=all --disable=no-member'
 let g:ale_fixers = {
 \   '*': ['remove_trailing_lines', 'trim_whitespace'],
 \   'cpp': ['astyle', 'clangtidy'],
 \}
 let g:ale_cpp_cc_executable = exepath("clangd")
+let g:ale_python_flake8_options = '--max-line-length=90'
+"let g:ale_exclude_highlights = ['line too long', 'E501', 'C0301']
+
+"let g:ale_python_auto_virtualenv = 1
+"" Specify directory names ALE should look for
+"let g:ale_virtualenv_dir_names = ['venv', '.venv', 'env']
+"let g:ale_python_pylint_auto_pipenv = 1
+
+"let g:ale_lint_on_enter = 1
+"let g:ale_lint_on_save = 1
 
 function s:apply_cc_options (buffer)
     let [l:root, l:json_file] = ale#c#FindCompileCommands(a:buffer)
@@ -351,6 +411,10 @@ function s:apply_cc_options (buffer)
 endfunction
 autocmd BufReadPost * call s:apply_cc_options(bufnr(''))
 
+" Tell ALE to find the python binary inside the uv-created .venv
+"let g:ale_python_auto_uv = 1
+"let g:ale_python_executable = getcwd() . '/.venv/bin/python'
+
 " --- Asyncomplete ---
 let g:asyncomplete_log_file = expand('~/asyncomplete.log')
 let g:asyncomplete_auto_completeopt = 0
@@ -360,8 +424,6 @@ autocmd! CompleteDone * if pumvisible() == 0 | pclose | endif
 inoremap <expr> <Tab>   pumvisible() ? "\<C-n>" : "\<Tab>"
 inoremap <expr> <S-Tab> pumvisible() ? "\<C-p>" : "\<S-Tab>"
 inoremap <expr> <cr>    pumvisible() ? asyncomplete#close_popup() : "\<cr>"
-
-imap <c-space> <Plug>(asyncomplete_force_refresh)
 
 " --- Vim-AI ---
 let g:vim_ai_token_file_path = '~/.config/openai.token'
@@ -393,7 +455,7 @@ let g:vim_ai_complete = {
 \    "max_tokens": 0,
 \    "max_completion_tokens": 0,
 \    "temperature": 0.1,
-\    "request_timeout": 1000,
+\    "request_timeout": 100,
 \    "stream": 1,
 \    "enable_auth": 1,
 \    "token_file_path": "",
