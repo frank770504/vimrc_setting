@@ -332,10 +332,7 @@ function! SetupPythonLsp()
     " still gets basic diagnostics.
     let l:has_ruff = HasRuffConfig()
     let l:plugins = {
-        \ 'pycodestyle': {
-        \   'enabled': v:true,
-        \   'ignore': ['W191', 'E111', 'E114', 'E117', 'E121', 'E125', 'E126', 'E127', 'E128', 'E129', 'E131', 'E101']
-        \ },
+        \ 'pycodestyle': {'enabled': v:true},
         \ 'mccabe': {'enabled': v:true},
         \ 'pyflakes': {'enabled': v:true},
         \ 'ruff': {'enabled': l:has_ruff},
@@ -561,8 +558,7 @@ let g:ale_python_executable = getcwd() . '/.venv/bin/python'
 let g:ale_python_pylint_executable = 'uv'
 let g:ale_python_pylint_use_global = 0
 let g:ale_python_pylint_options = '--enable=all --disable=no-member,bad-indentation,W0311'
-let g:ale_python_pycodestyle_options = '--ignore=W191,E111,E114,E117,E121,E125,E126,E127,E128,E129,E131,E101'
-let g:ale_python_flake8_options = '--max-line-length=90 --ignore=W191,E111,E114,E117,E121,E125,E126,E127,E128,E129,E131,E101'
+let g:ale_python_flake8_options = '--max-line-length=90'
 let g:ale_fixers = {
 \   '*': ['remove_trailing_lines', 'trim_whitespace'],
 \   'cpp': ['astyle', 'clangtidy'],
