@@ -30,6 +30,7 @@ Plugin 'prabirshrestha/asyncomplete.vim'
 Plugin 'prabirshrestha/asyncomplete-lsp.vim'
 Plugin 'rhysd/vim-lsp-ale'
 Plugin 'madox2/vim-ai'
+Plugin 'madox2/vim-ai-provider-google'
 Plugin 'mtth/scratch.vim'
 Plugin 'iamcco/markdown-preview.nvim'
 
