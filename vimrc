@@ -30,7 +30,6 @@ Plugin 'prabirshrestha/asyncomplete.vim'
 Plugin 'prabirshrestha/asyncomplete-lsp.vim'
 Plugin 'rhysd/vim-lsp-ale'
 Plugin 'madox2/vim-ai'
-Plugin 'madox2/vim-ai-provider-google'
 Plugin 'mtth/scratch.vim'
 Plugin 'iamcco/markdown-preview.nvim'
 
@@ -104,6 +103,7 @@ nnoremap <Leader>O O<Esc>0"_D
 nnoremap <Leader>p "+p
 nnoremap <Leader>P "+P
 nnoremap <Leader>y "+y
+vnoremap <Leader>y "+y
 nnoremap <Leader>yap "+yap
 nnoremap <Leader>Y "+Y
 nnoremap <Leader>% :let @+ = expand('%')<CR>
@@ -262,29 +262,113 @@ let g:lsp_diagnostics_enabled = 0
 let g:lsp_format_sync_timeout = 1000
 highlight lspReference ctermfg=red guifg=red ctermbg=green guibg=green
 
-if executable('pylsp-all')
-    au User lsp_setup call lsp#register_server({
-        \ 'name': 'pylsp-all',
-        \ 'cmd': {server_info->['pylsp-all']},
+function! FindPylsp()
+    " Try to locate the best pylsp executable from available environments.
+    " Priority: .venv > CONDA_PREFIX > ~/.local > system PATH fallback
+    " Returns: path to pylsp or empty string if not found.
+
+    " 1. Project .venv (most specific)
+    let l:venv_pylsp = getcwd() . '/.venv/bin/pylsp'
+    if executable(l:venv_pylsp)
+        return l:venv_pylsp
+    endif
+
+    " 2. Active conda environment
+    let l:conda_prefix = $CONDA_PREFIX
+    if !empty(l:conda_prefix)
+        let l:conda_pylsp = l:conda_prefix . '/bin/pylsp'
+        if executable(l:conda_pylsp)
+            return l:conda_pylsp
+        endif
+    endif
+
+    " 3. ~/.local/bin (pip install --user)
+    if executable(expand('~/.local/bin/pylsp'))
+        return expand('~/.local/bin/pylsp')
+    endif
+
+    " 4. Whatever is on PATH as a last resort
+    if executable('pylsp')
+        return 'pylsp'
+    endif
+
+    return ''
+endfunction
+
+function! HasRuffConfig()
+    " Check whether the current project has a ruff config file.
+    " Returns: 1 if found, 0 otherwise.
+    let l:pyproject = findfile('pyproject.toml', '.;')
+    if !empty(l:pyproject)
+        " Quick grep for [tool.ruff] section
+        let l:lines = readfile(l:pyproject)
+        for l:line in l:lines
+            if l:line =~ '\[tool\.ruff'
+                return 1
+            endif
+        endfor
+    endif
+    if !empty(findfile('ruff.toml', '.;'))
+        return 1
+    endif
+    if !empty(findfile('.ruff.toml', '.;'))
+        return 1
+    endif
+    return 0
+endfunction
+
+function! SetupPythonLsp()
+    let l:pylsp_cmd = FindPylsp()
+    if empty(l:pylsp_cmd)
+        echo "pylsp not found in any environment. Skipping Python LSP setup."
+        return
+    endif
+
+    " Base plugins: enable standard linters by default.
+    " When a ruff config is detected, we disable the overlapping built-in
+    " linters (pycodestyle, pyflakes, mccabe) and let python-lsp-ruff
+    " take over — it reads [tool.ruff] from pyproject.toml automatically.
+    " When no ruff config is found, keep standard linters so the user
+    " still gets basic diagnostics.
+    let l:has_ruff = HasRuffConfig()
+    let l:plugins = {
+        \ 'pycodestyle': {
+        \   'enabled': v:true,
+        \   'ignore': ['W191', 'E111', 'E114', 'E117', 'E121', 'E125', 'E126', 'E127', 'E128', 'E129', 'E131', 'E101']
+        \ },
+        \ 'mccabe': {'enabled': v:true},
+        \ 'pyflakes': {'enabled': v:true},
+        \ 'ruff': {'enabled': l:has_ruff},
+        \ }
+
+    if l:has_ruff
+        let l:plugins['pycodestyle']['enabled'] = v:false
+        let l:plugins['mccabe']['enabled'] = v:false
+        let l:plugins['pyflakes']['enabled'] = v:false
+    endif
+
+    call lsp#register_server({
+        \ 'name': 'pylsp',
+        \ 'cmd': {server_info->[l:pylsp_cmd]},
         \ 'allowlist': ['python', 'python3'],
+        \ 'workspace_config': {
+        \   'pylsp': {
+        \     'plugins': l:plugins
+        \   }
+        \ }
         \ })
+endfunction
+
+" Only trigger if pylsp is available somewhere
+if !empty(FindPylsp())
+    au User lsp_setup call SetupPythonLsp()
 endif
-"if executable('pylsp-all')
-"    au User lsp_setup call lsp#register_server({
-"        \ 'name': 'pylsp-all',
-"        \ 'cmd': {server_info->['pylsp-all']},
-"        \ 'allowlist': ['python', 'python3'],
-"        \ 'workspace_config': {
-"        \   'pylsp': {
-"        \     'plugins': {
-"        \       'jedi': {
-"        \         'environment': getcwd() . '/.venv'
-"        \       }
-"        \     }
-"        \   }
-"        \ }
-"        \ })
-"endif
+
+" Disable pylsp-all auto-registration by vim-lsp-settings to avoid
+" duplicate diagnostics (our custom pylsp with ruff replaces it).
+let g:lsp_settings = get(g:, 'lsp_settings', {})
+let g:lsp_settings['pylsp-all'] = get(g:lsp_settings, 'pylsp-all', {})
+let g:lsp_settings['pylsp-all']['disabled'] = 1
 
 function! s:on_lsp_buffer_enabled() abort
     setlocal omnifunc=lsp#complete
@@ -335,6 +419,98 @@ endfunction
 " Map the function to <leader>lr
 nnoremap <leader>lr :call LspRestart()<CR>
 
+function! LspDebug() abort
+    " Print essential debugging info about the current pylsp setup.
+    " Use :messages to see full output after calling.
+    echom "===== LSP Debug ====="
+
+    " 1. Which pylsp would be chosen now?
+    let l:pylsp_chosen = FindPylsp()
+    echom "FindPylsp()     : " . (empty(l:pylsp_chosen) ? 'NOT FOUND' : l:pylsp_chosen)
+
+    " 2. Ruff config detection
+    let l:has_ruff = HasRuffConfig()
+    if l:has_ruff
+        " Show which file matched
+        let l:pyproject = findfile('pyproject.toml', '.;')
+        if !empty(l:pyproject)
+            echom "Ruff config     : " . l:pyproject . " ([tool.ruff] section found)"
+        endif
+        let l:ruff_toml = findfile('ruff.toml', '.;')
+        if !empty(l:ruff_toml)
+            echom "Ruff config     : " . l:ruff_toml
+        endif
+        let l:dot_ruff = findfile('.ruff.toml', '.;')
+        if !empty(l:dot_ruff)
+            echom "Ruff config     : " . l:dot_ruff
+        endif
+    else
+        echom "Ruff config     : NOT FOUND (using pycodestyle/pyflakes/mccabe)"
+    endif
+
+    " 3. Active LSP servers for the current buffer
+    let l:servers = lsp#get_allowed_servers(bufnr('%'))
+    echom "Active LSP      : " . (empty(l:servers) ? 'NONE' : join(l:servers, ', '))
+    for l:srv in l:servers
+        " Try to get the server command
+        try
+            let l:server_info = lsp#get_server_info(l:srv)
+            if has_key(l:server_info, 'cmd')
+                echom "  " . l:srv . " cmd: " . string(l:server_info['cmd'])
+            endif
+        catch
+        endtry
+    endfor
+
+    " 4. Environment info
+    echom "CWD             : " . getcwd()
+    echom "CONDA_PREFIX    : " . (exists('$CONDA_PREFIX') ? $CONDA_PREFIX : '(not set)')
+    echom "VIRTUAL_ENV     : " . (exists('$VIRTUAL_ENV') ? $VIRTUAL_ENV : '(not set)')
+    echom "PATH (first 3)  : " . join(split($PATH, ':')[0:2], ':')
+
+    " 5. Workspace config that was registered
+    " We can't read it back from pylsp directly here, but we can show
+    " what vim-lsp has stored for the buffer
+    let l:bufnr = bufnr('%')
+    echom "Buffer filetype : " . &filetype
+    echom "Buffer omnifunc : " . &omnifunc
+
+    " 6. python-lsp-ruff availability (shell check)
+    let l:pylsp_path = empty(l:pylsp_chosen) ? 'pylsp' : l:pylsp_chosen
+    let l:has_pylsp_ruff = system('python3 -c "import pylsp_ruff; print(pylsp_ruff.__file__)" 2>/dev/null')
+    if l:has_pylsp_ruff =~ 'pylsp_ruff'
+        let l:has_pylsp_ruff = substitute(l:has_pylsp_ruff, '\n', '', 'g')
+        echom "pylsp_ruff      : " . l:has_pylsp_ruff
+    else
+        " Try the environment-specific python
+        let l:python_cmd = 'python3'
+        if !empty(l:pylsp_chosen)
+            let l:python_cmd = fnamemodify(l:pylsp_chosen, ':h') . '/python'
+        endif
+        let l:has_pylsp_ruff = system(l:python_cmd . ' -c "import pylsp_ruff; print(pylsp_ruff.__file__)" 2>&1')
+        if l:has_pylsp_ruff =~ 'pylsp_ruff'
+            let l:has_pylsp_ruff = substitute(l:has_pylsp_ruff, '\n', '', 'g')
+            echom "pylsp_ruff      : " . l:has_pylsp_ruff
+        else
+            echom "pylsp_ruff      : NOT INSTALLED for " . l:pylsp_chosen
+        endif
+    endif
+
+    " 7. ALE info (if loaded)
+    if exists('g:ale_enabled')
+        let l:ale_buf_enabled = getbufvar(bufnr('%'), 'ale_enabled', 1)
+        echom "ALE enabled     : global=" . g:ale_enabled . " buffer=" . l:ale_buf_enabled
+    else
+        echom "ALE enabled     : NOT LOADED (ale.vim plugin not active)"
+    endif
+
+    echom "===== End LSP Debug ====="
+    echo "See :messages for full debug output"
+endfunction
+
+" Map to <leader>ld
+nnoremap <leader>ld :call LspDebug()<CR>
+
 function! LspReconnect() abort
     " 1. Save the current filetype
     let l:ft = &filetype
@@ -379,18 +555,19 @@ function! LspAsyncompleteDeepReset() abort
     echo "Asyncomplete-LSP source re-registered"
 endfunction
 " --- ALE ---
-"let g:ale_python_executable = getcwd() . '/.venv/bin/python'
+let g:ale_python_executable = getcwd() . '/.venv/bin/python'
 
 " Ensure ALE uses the venv for pylint and other tools
-"let g:ale_python_pylint_executable = 'uv'
-"let g:ale_python_pylint_use_global = 0
-let g:ale_python_pylint_options = '--enable=all --disable=no-member'
+let g:ale_python_pylint_executable = 'uv'
+let g:ale_python_pylint_use_global = 0
+let g:ale_python_pylint_options = '--enable=all --disable=no-member,bad-indentation,W0311'
+let g:ale_python_pycodestyle_options = '--ignore=W191,E111,E114,E117,E121,E125,E126,E127,E128,E129,E131,E101'
+let g:ale_python_flake8_options = '--max-line-length=90 --ignore=W191,E111,E114,E117,E121,E125,E126,E127,E128,E129,E131,E101'
 let g:ale_fixers = {
 \   '*': ['remove_trailing_lines', 'trim_whitespace'],
 \   'cpp': ['astyle', 'clangtidy'],
 \}
 let g:ale_cpp_cc_executable = exepath("clangd")
-let g:ale_python_flake8_options = '--max-line-length=90'
 "let g:ale_exclude_highlights = ['line too long', 'E501', 'C0301']
 
 "let g:ale_python_auto_virtualenv = 1
@@ -412,8 +589,8 @@ endfunction
 autocmd BufReadPost * call s:apply_cc_options(bufnr(''))
 
 " Tell ALE to find the python binary inside the uv-created .venv
-"let g:ale_python_auto_uv = 1
-"let g:ale_python_executable = getcwd() . '/.venv/bin/python'
+let g:ale_python_auto_uv = 1
+let g:ale_python_executable = getcwd() . '/.venv/bin/python'
 
 " --- Asyncomplete ---
 let g:asyncomplete_log_file = expand('~/asyncomplete.log')
