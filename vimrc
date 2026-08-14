@@ -140,7 +140,25 @@ let g:airline#extensions#tabline#fnamemod = ':t'
 let g:airline#extensions#tabline#left_sep = ' '
 let g:airline#extensions#tabline#left_alt_sep = '|'
 let g:airline#extensions#tabline#tab_nr_type = 1
-let g:airline#extensions#tabline#formatter = 'unique_tail_improved'
+let g:airline#extensions#tabline#formatter = 'fugitive'
+
+" Fugitive tab/statusline hint defaults
+let g:fugitive_tab_hint  = get(g:, 'fugitive_tab_hint',  nr2char(0xe0a0) . ' ')
+let g:fugitive_file_hint = get(g:, 'fugitive_file_hint', nr2char(0xe0a2) . ' ')
+
+" Debug logging to ./debug.log (set to 0 to disable)
+let g:fugitive_debug = 0
+
+function! FugitiveDebugLog(msg) abort
+    if get(g:, 'fugitive_debug', 0)
+        " dedupe consecutive identical messages to avoid redraw spam
+        if get(g:, 'fugitive_debug_last', '') ==# a:msg
+            return
+        endif
+        let g:fugitive_debug_last = a:msg
+        call writefile([strftime('%Y-%m-%d %H:%M:%S') . ' ' . a:msg], expand('~/vim_airline_debug.log'), 'a')
+    endif
+endfunction
 
 if !exists('g:airline_symbols')
     let g:airline_symbols = {}
@@ -153,12 +171,95 @@ let g:airline_symbols.branch = ''
 let g:airline_symbols.readonly = ''
 let g:airline_symbols.linenr = ''
 
+" Parse a fugitive URL into {git_dir, repo, rev, file}.
+" Named FugitiveTabParse() to avoid clobbering fugitive's own FugitiveParse().
+function! FugitiveTabParse(url) abort
+    let l:result = {}
+    let l:result['git_dir'] = ''
+    let l:result['repo'] = ''
+    let l:result['rev'] = ''
+    let l:result['file'] = ''
+
+    call FugitiveDebugLog('FugitiveTabParse IN : url=' . string(a:url))
+
+    " Strip 'fugitive://' prefix
+    if stridx(a:url, 'fugitive://') == -1
+        call FugitiveDebugLog('FugitiveTabParse    no fugitive:// prefix, returning empty')
+        return l:result
+    endif
+    let l:rest = substitute(a:url, '^fugitive://', '', '')
+
+    " Find the '//' separator between git-dir and rev/file
+    let l:sep = stridx(l:rest, '//')
+    if l:sep == -1
+        call FugitiveDebugLog('FugitiveTabParse    no // separator, rest=' . string(l:rest))
+        return l:result
+    endif
+    let l:result['git_dir'] = strpart(l:rest, 0, l:sep)
+    let l:result['repo'] = fnamemodify(l:result['git_dir'], ':h:t')
+    let l:tail = strpart(l:rest, l:sep + 2)
+
+    " Split rev and file at the first '/'
+    let l:slash = stridx(l:tail, '/')
+    if l:slash == -1
+        let l:result['rev'] = l:tail
+    else
+        let l:result['rev'] = strpart(l:tail, 0, l:slash)
+        let l:result['file'] = strpart(l:tail, l:slash + 1)
+    endif
+
+    call FugitiveDebugLog('FugitiveTabParse OUT: rest=' . string(l:rest) . ' sep=' . l:sep . ' tail=' . string(l:tail) . ' slash=' . l:slash . ' git_dir=' . string(l:result['git_dir']) . ' repo=' . string(l:result['repo']) . ' rev=' . string(l:result['rev']) . ' file=' . string(l:result['file']))
+    return l:result
+endfunction
+
+" Build the tab label for a fugitive buffer
+function! FugitiveTabLabel(bufname) abort
+    let l:p = FugitiveTabParse(a:bufname)
+    call FugitiveDebugLog('FugitiveTabLabel IN: bufname=' . string(a:bufname) . ' parsed=' . string(l:p))
+    " Use if blocks to avoid E730/E116 in Vim 8.2
+    if !empty(l:p['file'])
+        " blob/index file
+        let l:label = l:p['repo'] . ':' . fnamemodify(l:p['file'], ':t')
+        call FugitiveDebugLog('FugitiveTabLabel    -> blob label=' . string(l:label))
+        return l:label
+    elseif !empty(l:p['rev'])
+        " commit page
+        let l:rev = l:p['rev']
+        if l:rev =~# '^\x\+$' && strlen(l:rev) > 8
+            let l:rev = strpart(l:rev, 0, 8)
+        endif
+        let l:label = l:p['repo'] . '@' . l:rev
+        call FugitiveDebugLog('FugitiveTabLabel    -> commit label=' . string(l:label))
+        return l:label
+    else
+        " status page
+        call FugitiveDebugLog('FugitiveTabLabel    -> status label=' . string(l:p['repo']))
+        return l:p['repo']
+    endif
+endfunction
+
 function! CleanFugitivePath()
     let l:path = expand('%:p')
-    if l:path =~ 'fugitive://'
-        return 'GIT: ' . expand('%:t')
+    let l:name = bufname('%')
+    call FugitiveDebugLog('CleanFugitivePath IN: bufname=' . string(l:name) . ' expand(%:p)=' . string(l:path) . ' cwd=' . string(getcwd()))
+    if l:path =~# 'fugitive://'
+        let l:p = FugitiveTabParse(l:path)
+        if !empty(l:p['file'])
+            " blob/index file
+            let l:file_hint = get(g:, 'fugitive_file_hint', nr2char(0xe0a2) . ' ')
+            let l:out = l:file_hint . fnamemodify(l:p['file'], ':t')
+            call FugitiveDebugLog('CleanFugitivePath   -> blob out=' . string(l:out))
+            return l:out
+        else
+            " status or commit page
+            let l:out = 'GIT: ' . l:p['repo']
+            call FugitiveDebugLog('CleanFugitivePath   -> status/commit out=' . string(l:out))
+            return l:out
+        endif
     endif
-    return expand('%:t')
+    let l:out = expand('%:t')
+    call FugitiveDebugLog('CleanFugitivePath   -> normal out=' . string(l:out))
+    return l:out
 endfunction
 let g:airline_section_c = '%{CleanFugitivePath()}'
 
