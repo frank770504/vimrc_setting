@@ -13,12 +13,22 @@ For full functionality, the following tools are recommended:
 - **(Optional) Python LSP Server:** `pip install python-lsp-server` (for Python IDE features).
 
 ### 2. Setup
-Clone this repository and symlink the `vimrc` file to your home directory:
+Clone this repository and symlink the `vimrc` file and custom airline formatters to your home directory:
 
 ```bash
 git clone https://github.com/your-username/vimrc_setting.git ~/vimrc_setting
-ln -s ~/vimrc_setting/vimrc ~/.vimrc
+
+# Symlink vimrc
+ln -sf ~/vimrc_setting/vimrc ~/.vimrc
+
+# Symlink custom airline tabline formatter (required for fugitive tabline support)
+mkdir -p ~/.vim/autoload/airline/extensions/tabline/formatters
+ln -sf ~/vimrc_setting/autoload/airline/extensions/tabline/formatters/fugitive.vim \
+  ~/.vim/autoload/airline/extensions/tabline/formatters/fugitive.vim
 ```
+
+> **Note:** The custom tabline formatter is required for `g:airline#extensions#tabline#formatter = 'fugitive'`. See [`doc/spec/airline-fugitive-tabline.md`](doc/spec/airline-fugitive-tabline.md) for full architecture details.
+
 
 ### 3. Install Plugin Manager (Vundle)
 This configuration uses [Vundle](https://github.com/VundleVim/Vundle.vim) to manage plugins.
