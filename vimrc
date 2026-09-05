@@ -668,6 +668,16 @@ let g:ale_fixers = {
 let g:ale_cpp_cc_executable = exepath("clangd")
 "let g:ale_exclude_highlights = ['line too long', 'E501', 'C0301']
 
+" ALE diagnostic highlights (clean underline/undercurl, no background box)
+highlight ALEError   cterm=underline ctermbg=NONE ctermfg=Red    gui=undercurl guisp=Red
+highlight ALEWarning cterm=underline ctermbg=NONE ctermfg=Yellow gui=undercurl guisp=Yellow
+highlight ALEInfo    cterm=underline ctermbg=NONE ctermfg=Cyan   gui=undercurl guisp=Cyan
+
+" ALE gutter signs styling
+highlight ALEErrorSign   ctermfg=Red    ctermbg=NONE guifg=#ff5555 guibg=NONE
+highlight ALEWarningSign ctermfg=Yellow ctermbg=NONE guifg=#ffb86c guibg=NONE
+highlight ALEInfoSign    ctermfg=Cyan   ctermbg=NONE guifg=#8be9fd guibg=NONE
+
 "let g:ale_python_auto_virtualenv = 1
 "" Specify directory names ALE should look for
 "let g:ale_virtualenv_dir_names = ['venv', '.venv', 'env']
