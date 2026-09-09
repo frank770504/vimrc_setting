@@ -1,0 +1,207 @@
+" =============================================================================
+" vimrc.lite — lightweight Vim config for remote servers
+"
+" Target: Vim 8.2+ on Linux over SSH (assumes `ssh -X` for clipboard).
+" Plugins (vim-plug): better-whitespace, airline, fugitive, fzf, fzf.vim.
+" No LSP / AI / linting / completion daemons.
+"
+" Deploy:  scp vimrc.lite remote:~/.vimrc
+" Install: see README.md ("Lightweight Server Configuration").
+" =============================================================================
+
+" =============================================================================
+" 1. BASICS
+" =============================================================================
+set encoding=utf-8
+filetype plugin indent on
+syntax on
+
+set backspace=indent,eol,start
+set hlsearch
+hi Search ctermbg=LightYellow ctermfg=Red
+
+set number relativenumber
+set tags=tags;/
+set laststatus=2
+set noshowmode
+
+" =============================================================================
+" 2. SEARCH & COMMAND LINE
+" =============================================================================
+set incsearch                  " highlight matches as you type
+set wildmenu                   " command-line completion menu
+set wildmode=list:longest,full
+
+" =============================================================================
+" 3. INDENTATION & WHITESPACE VISUALIZATION
+" =============================================================================
+set tabstop=4
+set shiftwidth=4
+set expandtab
+
+" Show tabs vs. leading spaces vs. trailing spaces distinctly.
+set list
+set listchars=tab:▸\ ,trail:·,lead:·
+
+" =============================================================================
+" 4. UI
+" =============================================================================
+set cursorcolumn
+hi CursorColumn cterm=none ctermbg=0x444444 ctermfg=none
+
+set colorcolumn=80
+hi ColorColumn cterm=none ctermbg=0x444444 ctermfg=LightGray
+
+" =============================================================================
+" 5. CLIPBOARD (requires `ssh -X`; degrades gracefully otherwise)
+" =============================================================================
+if has('clipboard')
+    set clipboard=unnamedplus
+endif
+
+" =============================================================================
+" 6. PERSISTENT UNDO (built-in; survives closing/reopening a file)
+" =============================================================================
+set undofile
+set undodir=~/.vim/undodir
+silent! call mkdir(expand('~/.vim/undodir'), 'p')
+
+" =============================================================================
+" 7. PLUGIN MANAGER (vim-plug)
+" =============================================================================
+if empty(glob('~/.vim/autoload/plug.vim'))
+    echom 'vim-plug not found. Install it first (see README.md):'
+    echom 'curl -fLo ~/.vim/autoload/plug.vim --create-dirs https://raw.githubusercontent.com/junegunn/vim-plug/master/plug.vim'
+else
+    call plug#begin('~/.vim/plugged')
+    Plug 'ntpeters/vim-better-whitespace'
+    Plug 'vim-airline/vim-airline'
+    Plug 'tpope/vim-fugitive'
+    Plug 'junegunn/fzf'
+    Plug 'junegunn/fzf.vim'
+    call plug#end()
+endif
+
+" =============================================================================
+" 8. AIRLINE (ASCII, no powerline fonts)
+" =============================================================================
+let g:airline#extensions#tabline#enabled = 1
+let g:airline#extensions#tabline#fnamemod = ':t'
+" Branch segment auto-detects fugitive (installed above).
+let g:airline#extensions#branch#enabled = 1
+
+" =============================================================================
+" 9. GENERAL MAPPINGS
+" =============================================================================
+let mapleader = " "
+
+" File explorer
+nnoremap <Leader>pv :Ex<CR>
+" Switch between recent files
+nnoremap <Leader>nn :b#<CR>
+" Clear search highlights
+nnoremap <Leader>sd :noh<CR>
+" Join lines while keeping cursor position
+nnoremap J mzJ`z
+" Page scroll with centering
+nnoremap <C-d> <C-d>zz
+nnoremap <C-u> <C-u>zz
+" Search and center
+nnoremap n nzz
+nnoremap N Nzz
+" Move selected lines
+vnoremap J :m '>+1<CR>gv=gv
+vnoremap K :m '<-2<CR>gv=gv
+" Paste without overwriting register
+nnoremap <Leader>dp "_dp
+xnoremap <Leader>dp "_dp
+" Clipboard yank/paste
+nnoremap <Leader>o o<Esc>0"_D
+nnoremap <Leader>O O<Esc>0"_D
+nnoremap <Leader>p "+p
+nnoremap <Leader>P "+P
+nnoremap <Leader>y "+y
+vnoremap <Leader>y "+y
+nnoremap <Leader>yap "+yap
+nnoremap <Leader>Y "+Y
+nnoremap <Leader>% :let @+ = expand('%')<CR>
+nnoremap <Leader>%% :let @+ = expand('%:p')<CR>
+" Delete without affecting yank register
+nnoremap <Leader>d "_d
+vnoremap <Leader>d "_d
+
+" Quickfix navigation
+nnoremap <silent> <C-j> :cnext<CR>zz
+nnoremap <silent> <C-k> :cprev<CR>zz
+
+" Highlight word under cursor (toggle)
+nnoremap <Leader>h :call HighlightNearCursor()<CR>
+function! HighlightNearCursor()
+  if !exists("s:highlightcursor")
+    match Todo /\k*\%#\k*/
+    let s:highlightcursor=1
+  else
+    match None
+    let s:highlightcursor=0
+  endif
+endfunction
+
+" =============================================================================
+" 10. FZF
+" =============================================================================
+nnoremap <Leader>pf :Files<CR>
+nnoremap <Leader>pb :Buffers<CR>
+nnoremap <Leader>pt :Tags<CR>
+nnoremap <Leader>pm :Maps<CR>
+nnoremap <Leader>pw :Windows<CR>
+nnoremap <Leader>pc :History:<CR>
+nnoremap <Leader>pg :Commits<CR>
+nnoremap <C-p> :GFiles<CR>
+
+function! FuzzyGrepLocal()
+  call inputsave()
+  let _string = input("Grep < ")
+  call inputrestore()
+  execute 'Rg ' . _string
+endfunction
+nnoremap <Leader>ps :call FuzzyGrepLocal()<CR>
+
+function! s:build_quickfix_list(lines)
+  call setqflist(map(copy(a:lines), '{ "filename": v:val, "lnum": 1 }'))
+  copen
+  cc
+endfunction
+
+let g:fzf_action = {
+  \ 'ctrl-l': function('s:build_quickfix_list'),
+  \ 'ctrl-t': 'tab split',
+  \ 'ctrl-x': 'split',
+  \ 'ctrl-v': 'vsplit' }
+
+function! s:list_buffers()
+  redir => list
+  silent ls
+  redir END
+  return split(list, "\n")
+endfunction
+
+function! s:delete_buffers(lines)
+  execute 'bwipeout' join(map(a:lines, {_, line -> split(line)[0]}))
+endfunction
+
+command! BD call fzf#run(fzf#wrap({
+  \ 'source': s:list_buffers(),
+  \ 'sink*': { lines -> s:delete_buffers(lines) },
+  \ 'options': '--multi --reverse --bind ctrl-t:select-all+accept'
+\ }))
+
+inoremap <expr> <c-x><c-f> fzf#vim#complete#path('rg --files')
+inoremap <expr> <c-x><c-k> fzf#vim#complete#word({'window': { 'width': 0.2, 'height': 0.9, 'xoffset': 1 }})
+
+" =============================================================================
+" 11. DIFF HIGHLIGHTING (terminal colors)
+" =============================================================================
+highlight DiffAdd    cterm=bold ctermfg=10 ctermbg=17
+highlight DiffDelete cterm=bold ctermfg=10 ctermbg=17
+highlight DiffChange cterm=bold ctermfg=10 ctermbg=17
+highlight DiffText   cterm=bold ctermfg=10 ctermbg=88

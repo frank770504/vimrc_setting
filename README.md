@@ -2,6 +2,77 @@
 
 A comprehensive and efficient Vim setup tailored for development, featuring LSP support, fuzzy finding, Git integration, and AI-powered coding assistance.
 
+---
+
+## 🪶 Lightweight Server Configuration (`vimrc.lite`)
+
+A minimal, dependency-light variant for remote servers. It drops all LSP, AI,
+linting, and completion plugins (nothing runs in the background) and keeps only:
+
+- [vim-better-whitespace](https://github.com/ntpeters/vim-better-whitespace) — trailing whitespace
+- [vim-airline](https://github.com/vim-airline/vim-airline) — status/tabline (ASCII, no powerline fonts)
+- [vim-fugitive](https://github.com/tpope/vim-fugitive) — Git wrapper (`:Git`, `:Gblame`, ...)
+- [fzf](https://github.com/junegunn/fzf) + [fzf.vim](https://github.com/junegunn/fzf.vim) — fuzzy finding
+
+It uses **vim-plug** as the plugin manager.
+
+### Deploy
+
+```bash
+scp vimrc.lite user@server:~/.vimrc
+```
+
+### Install on the server
+
+1. **Install vim-plug** (single file):
+   ```bash
+   curl -fLo ~/.vim/autoload/plug.vim --create-dirs \
+       https://raw.githubusercontent.com/junegunn/vim-plug/master/plug.vim
+   ```
+
+2. **Install the fzf binary** (the Vim plugin is only a wrapper around it):
+   ```bash
+   # Option A: install script (recommended)
+   git clone --depth 1 https://github.com/junegunn/fzf.git ~/.fzf
+   ~/.fzf/install --bin
+   # then add ~/.fzf/bin to your PATH in ~/.bashrc
+
+   # Option B: distro package (if available)
+   sudo apt install fzf
+   ```
+
+3. **Install ripgrep** (only needed for `<Leader>ps` / `:Rg` fuzzy search):
+   ```bash
+   sudo apt install ripgrep
+   ```
+
+4. **Install the plugins**: open Vim and run:
+   ```vim
+   :PlugInstall
+   ```
+
+5. **Persistent undo directory** (the vimrc auto-creates it, but doing it manually is harmless):
+   ```bash
+   mkdir -p ~/.vim/undodir
+   ```
+
+### Requirements
+
+- Vim 8.2+ on Linux (written for Vim 8.2.280+; avoids `<Cmd>` mappings).
+- Connect with `ssh -X` for clipboard support (`clipboard=unnamedplus`); it degrades gracefully otherwise.
+- `encoding=utf-8` (set in the file) for the tab/space `listchars` glyphs.
+
+### What's removed vs. the full `vimrc`
+
+- Plugin manager: Vundle → **vim-plug**
+- Plugins dropped: indentLine, vim-flog, undotree, csv.vim, ALE, vim-lsp,
+  vim-lsp-settings, asyncomplete.vim, asyncomplete-lsp.vim, vim-lsp-ale,
+  vim-ai, vim-ai-provider-google, scratch.vim, markdown-preview.nvim
+- Custom fugitive tabline machinery: `FugitiveTabParse`, `CleanFugitivePath`,
+  `FugitiveDebugLog`, `:Gclean`, and the fugitive tabline formatter autoload file
+
+---
+
 ## 🛠️ Installation
 
 ### 1. Prerequisites
