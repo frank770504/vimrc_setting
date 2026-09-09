@@ -52,6 +52,11 @@ upward (`.;`) for:
 2. `ruff.toml`
 3. `.ruff.toml`
 
+> [!NOTE]
+> The search is buffer-relative. It returns `0` immediately for special
+> buffers (e.g. `fugitive://` blob/index views or `buftype`-set buffers), since
+> resolving `pyproject.toml` against a `fugitive://` URL would raise `E484`.
+
 ### When ruff config IS found:
 - **enabled:** `ruff`
 - **disabled:** `pycodestyle`, `pyflakes`, `mccabe`
@@ -71,6 +76,13 @@ upward (`.;`) for:
 - **allowlist:** `['python', 'python3']`
 - **cmd:** the path returned by `FindPylsp()`
 - **workspace_config:** dynamically built `pylsp.plugins` dict based on ruff detection
+
+`lsp_setup` is a global event and also fires in non-Python buffers (empty
+startup buffers, `CMakeLists.txt`, `fugitive://` views, ...). Ruff detection is
+buffer-relative, so `SetupPythonLsp()` only runs `HasRuffConfig()` when the
+current buffer's `filetype` starts with `python`; for any other buffer it falls
+back to the standard linters. A later Python buffer re-fires `lsp_setup` (via
+`vim-lsp-settings`) and overrides this with the correct plugin set.
 
 ### vim-lsp-settings conflict prevention
 

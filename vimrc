@@ -400,6 +400,15 @@ endfunction
 function! HasRuffConfig()
     " Check whether the current project has a ruff config file.
     " Returns: 1 if found, 0 otherwise.
+
+    " Special buffers (e.g. fugitive:// blob/index views) have a URL as their
+    " buffer name. findfile() would resolve 'pyproject.toml' against that URL
+    " and the subsequent readfile() would fail with E484. Only search when the
+    " current buffer is a real on-disk file.
+    if &buftype !=# '' || bufname('%') =~# '^\a[[:alnum:].+-]*://'
+        return 0
+    endif
+
     let l:pyproject = findfile('pyproject.toml', '.;')
     if !empty(l:pyproject)
         " Quick grep for [tool.ruff] section
@@ -432,7 +441,17 @@ function! SetupPythonLsp()
     " take over — it reads [tool.ruff] from pyproject.toml automatically.
     " When no ruff config is found, keep standard linters so the user
     " still gets basic diagnostics.
-    let l:has_ruff = HasRuffConfig()
+
+    " lsp_setup is a global event: it fires in non-Python buffers too
+    " (empty startup buffers, CMakeLists.txt, fugitive:// views, ...).
+    " Ruff detection is buffer-relative, so only run it for real Python
+    " buffers; otherwise fall back to the standard linters. A later Python
+    " buffer re-fires lsp_setup (via vim-lsp-settings) and overrides this
+    " with the correct plugin set.
+    let l:has_ruff = 0
+    if &filetype =~# '^python'
+        let l:has_ruff = HasRuffConfig()
+    endif
     let l:plugins = {
         \ 'pycodestyle': {'enabled': v:true},
         \ 'mccabe': {'enabled': v:true},
