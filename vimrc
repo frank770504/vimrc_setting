@@ -699,6 +699,21 @@ highlight ALEErrorSign   ctermfg=Red    ctermbg=NONE guifg=#ff5555 guibg=NONE
 highlight ALEWarningSign ctermfg=Yellow ctermbg=NONE guifg=#ffb86c guibg=NONE
 highlight ALEInfoSign    ctermfg=Cyan   ctermbg=NONE guifg=#8be9fd guibg=NONE
 
+" ALE virtual-text: print the lint message inline at the end of the line.
+" ALE's built-in default only turns this on for Neovim or Vim >= 9.0.0297;
+" on plain Vim 8.2 it silently falls back to the bottom echo message. Force
+" it on so the same config behaves the same on every machine.
+if has('nvim-0.3.2') || (has('patch-9.0.0297') && has('textprop') && has('popupwin'))
+    " Neovim and modern Vim can show every line's message.
+    let g:ale_virtualtext_cursor = 'all'
+elseif has('textprop') && has('popupwin')
+    " Vim 8.2 only emulates virtual-text with a popup, and that emulation
+    " can only show the current line's message.
+    let g:ale_virtualtext_cursor = 'current'
+else
+    let g:ale_virtualtext_cursor = 'disabled'
+endif
+
 "let g:ale_python_auto_virtualenv = 1
 "" Specify directory names ALE should look for
 "let g:ale_virtualenv_dir_names = ['venv', '.venv', 'env']
