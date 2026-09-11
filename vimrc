@@ -92,6 +92,8 @@ nnoremap <C-u> <C-u>zz
 " Search and center
 nnoremap n nzz
 nnoremap N Nzz
+nnoremap ]c ]czz
+nnoremap [c [czz
 " Move selected lines
 vnoremap J :m '>+1<CR>gv=gv
 vnoremap K :m '<-2<CR>gv=gv
