@@ -73,48 +73,113 @@ scp vimrc.lite user@server:~/.vimrc
 
 ---
 
-## 🛠️ Installation
+## 🛠️ Full Configuration (`vimrc`)
 
-### 1. Prerequisites
-Ensure you have `vim` (with `+python3` and `+clipboard` support recommended) and `git` installed.
+The complete setup: LSP (`vim-lsp` + `vim-lsp-settings`), fuzzy finding
+(`fzf` + `fzf.vim`), Git (`vim-fugitive` + `vim-flog`), linting (`ALE`),
+autocompletion (`asyncomplete`), AI assistance (`vim-ai` / Gemini), a powerline
+statusline (`vim-airline`), and QoL plugins (indentLine, better-whitespace,
+undotree, csv, scratch, markdown-preview).
 
-For full functionality, the following tools are recommended:
-- **[FZF](https://github.com/junegunn/fzf):** Command-line fuzzy finder.
-- **[Ripgrep (rg)](https://github.com/BurntSushi/ripgrep):** For fast searching.
-- **(Optional) Python LSP Server:** `pip install python-lsp-server` (for Python IDE features).
+Uses **Vundle** as the plugin manager.
 
-### 2. Setup
-Clone this repository and symlink the `vimrc` file and custom airline formatters to your home directory:
+### Deploy
 
 ```bash
 git clone https://github.com/your-username/vimrc_setting.git ~/vimrc_setting
 
-# Symlink vimrc
+# Symlink the vimrc
 ln -sf ~/vimrc_setting/vimrc ~/.vimrc
 
-# Symlink custom airline tabline formatter (required for fugitive tabline support)
+# Symlink the custom airline tabline formatter (required for fugitive tab labels)
 mkdir -p ~/.vim/autoload/airline/extensions/tabline/formatters
 ln -sf ~/vimrc_setting/autoload/airline/extensions/tabline/formatters/fugitive.vim \
   ~/.vim/autoload/airline/extensions/tabline/formatters/fugitive.vim
 ```
 
-> **Note:** The custom tabline formatter is required for `g:airline#extensions#tabline#formatter = 'fugitive'`. See [`doc/spec/airline-fugitive-tabline.md`](doc/spec/airline-fugitive-tabline.md) for full architecture details.
+> **Note:** `g:airline#extensions#tabline#formatter = 'fugitive'` requires the
+> autoload file symlinked above. See
+> [`doc/spec/airline-fugitive-tabline.md`](doc/spec/airline-fugitive-tabline.md).
 
+### Install on the machine
 
-### 3. Install Plugin Manager (Vundle)
-This configuration uses [Vundle](https://github.com/VundleVim/Vundle.vim) to manage plugins.
+1. **Vim + git + curl** — Vim 8.2+ compiled with `+job`, `+channel`, `+lambda`,
+   `+clipboard`, and `+python3` (all used by LSP/ALE/asyncomplete/clipboard):
+   ```bash
+   sudo apt install vim git curl
+   ```
 
-```bash
-git clone https://github.com/VundleVim/Vundle.vim.git ~/.vim/bundle/Vundle.vim
-```
+2. **Vundle** (plugin manager):
+   ```bash
+   git clone https://github.com/VundleVim/Vundle.vim.git ~/.vim/bundle/Vundle.vim
+   ```
 
-### 4. Install Plugins
-Open Vim and run:
-```vim
-:PluginInstall
-```
+3. **fzf binary** (the `fzf` Vim plugin is only a wrapper):
+   ```bash
+   # Option A: install script (recommended)
+   git clone --depth 1 https://github.com/junegunn/fzf.git ~/.fzf
+   ~/.fzf/install --bin
+   # then add ~/.fzf/bin to your PATH in ~/.bashrc
 
-Note: Markdown Preview needs to run `:call mkdp#util#install()` to install completely
+   # Option B: distro package
+   sudo apt install fzf
+   ```
+   > **Note:** the vimrc hardcodes `set rtp+=/home/ywchen/.fzf/bin/fzf` —
+   > change it to your own `$HOME` if it differs.
+
+4. **ripgrep** (for `<Leader>ps` / `:Rg`):
+   ```bash
+   sudo apt install ripgrep
+   ```
+
+5. **Node.js + npm** (for `markdown-preview.nvim`):
+   ```bash
+   sudo apt install nodejs npm
+   ```
+
+6. **Python LSP** (for Python IDE features; the vimrc auto-detects `.venv`,
+   `CONDA_PREFIX`, `~/.local/bin`, or `pylsp` on `PATH`):
+   ```bash
+   # In the project venv, or globally:
+   pip install python-lsp-server python-lsp-ruff
+   ```
+   See [`doc/spec/python-lsp-usage.md`](doc/spec/python-lsp-usage.md) for how
+   ruff config is auto-detected.
+
+7. **ALE linters** (optional, per language):
+   ```bash
+   # Python (ALE runs pylint via uv)
+   pip install pylint flake8 pycodestyle
+   # C/C++
+   sudo apt install clangd astyle clang-tidy
+   # uv (ALE python runner): https://docs.astral.sh/uv/
+   ```
+
+8. **AI providers** (optional; for `vim-ai`):
+   ```bash
+   # OpenAI token (referenced by g:vim_ai_token_file_path)
+   echo "sk-..." > ~/.config/openai.token
+   # Optional roles file
+   touch ~/.config/vim-ai-roles.ini
+   ```
+
+9. **Install the plugins** — open Vim and run:
+   ```vim
+   :PluginInstall
+   ```
+
+10. **Markdown preview** (one-time) — in Vim run:
+    ```vim
+    :call mkdp#util#install()
+    ```
+
+### Requirements
+
+- Vim 8.2+ with `+job`, `+channel`, `+lambda`, `+clipboard`, `+python3`.
+- `git`, `curl` (vim-ai uses curl for API calls).
+- `fzf` binary + `ripgrep` on `PATH`.
+- A display (or `ssh -X`) for `clipboard=unnamedplus`.
+- `encoding=utf-8` (set in the file) for powerline glyphs and `listchars`.
 
 ---
 
@@ -185,8 +250,18 @@ The `<Leader>` key is mapped to **Space**.
 | `<Leader>c` | N/V | **AI Chat**: Open a chat window with the AI. |
 | `<Leader>nc` | N/V | **New Tab Chat**: Open AI chat in a full-screen new tab. |
 
-### 📦 Plugin Specifics
-... (mappings table) ...
+### 📦 Plugin-Specific Commands
+| Mapping/Command | Description |
+|-----------------|-------------|
+| `<Leader>u` | **Undo Tree**: Toggle the undo tree (undotree). |
+| `<Leader>ac` | **CSV Arrange**: Align CSV columns (`csv.vim`). |
+| `<Leader>uac` | **CSV Unarrange**: Undo CSV column alignment. |
+| `<Leader>git` | **Git Graph**: Open the git commit graph (vim-flog). |
+| `:Gclean` | **Clean Merged Branches**: Delete local branches merged into HEAD. |
+| `:BD` | **Delete Buffers**: FZF multi-select to wipe buffers. |
+| `:MarkdownPreview` | **Markdown Preview**: Open live preview in a browser. |
+| `:Scratch` | **Scratch Window**: Open a scratch buffer. |
+| `:StripWhitespace` | **Strip Whitespace**: Remove trailing whitespace (better-whitespace). |
 
 ---
 
@@ -263,16 +338,20 @@ Check Vim's internal state:
 | [Vundle.vim](https://github.com/VundleVim/Vundle.vim) | Plugin manager |
 | [indentLine](https://github.com/Yggdroot/indentLine) | Display indentation levels |
 | [vim-better-whitespace](https://github.com/ntpeters/vim-better-whitespace) | Highlight and clean trailing whitespace |
-| [vim-airline](https://github.com/vim-airline/vim-airline) | Lean & mean status/tabline |
-| [vim-fugitive](https://github.com/tpope/vim-fugitive) | The premier Vim Git wrapper |
-| [vim-flog](https://github.com/rbong/vim-flog) | Fast Git graph viewer |
-| [fzf.vim](https://github.com/junegunn/fzf.vim) | FZF integration for Vim |
+| [vim-airline](https://github.com/vim-airline/vim-airline) | Status/tabline (powerline) |
+| [vim-fugitive](https://github.com/tpope/vim-fugitive) | Git wrapper |
+| [vim-flog](https://github.com/rbong/vim-flog) | Git graph viewer |
+| [fzf](https://github.com/junegunn/fzf) | Fuzzy finder (core + binary) |
+| [fzf.vim](https://github.com/junegunn/fzf.vim) | FZF integration (`:Files`, `:Rg`, ...) |
 | [undotree](https://github.com/mbbill/undotree) | Visualize the undo tree |
-| [csv.vim](https://github.com/chrisbra/csv.vim) | Plugin for handling CSV files |
+| [csv.vim](https://github.com/chrisbra/csv.vim) | CSV column handling |
 | [ale](https://github.com/dense-analysis/ale) | Asynchronous Lint Engine |
-| [vim-lsp](https://github.com/prabirshrestha/vim-lsp) | Async Language Server Protocol |
-| [vim-lsp-settings](https://github.com/mattn/vim-lsp-settings) | Auto-configurations for LSP |
-| [asyncomplete.vim](https://github.com/prabirshrestha/asyncomplete.vim) | Async completion in Vim |
+| [vim-lsp](https://github.com/prabirshrestha/vim-lsp) | Language Server Protocol client |
+| [vim-lsp-settings](https://github.com/mattn/vim-lsp-settings) | Auto-install/config for LSP servers |
+| [asyncomplete.vim](https://github.com/prabirshrestha/asyncomplete.vim) | Async completion framework |
+| [asyncomplete-lsp.vim](https://github.com/prabirshrestha/asyncomplete-lsp.vim) | LSP source for asyncomplete |
+| [vim-lsp-ale](https://github.com/rhysd/vim-lsp-ale) | Bridge LSP diagnostics into ALE |
 | [vim-ai](https://github.com/madox2/vim-ai) | AI completion and chat |
-| [scratch.vim](https://github.com/mtth/scratch.vim) | Unobtrusive scratch window |
-| [markdown-preview.nvim](https://github.com/iamcco/markdown-preview.nvim) | Live preview for Markdown |
+| [vim-ai-provider-google](https://github.com/madox2/vim-ai-provider-google) | Google/Gemini provider for vim-ai |
+| [scratch.vim](https://github.com/mtth/scratch.vim) | Scratch window |
+| [markdown-preview.nvim](https://github.com/iamcco/markdown-preview.nvim) | Live Markdown preview |
