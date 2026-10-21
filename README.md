@@ -241,7 +241,7 @@ The `<Leader>` key is mapped to **Space**.
 | `<Leader><Leader>`| Normal | **Hover**: Show type information or documentation in a popup. |
 | `<Leader>ga` | Normal | **Code Actions**: Show available LSP actions (e.g., auto-imports). |
 | `<Leader>gi` | Normal | **Implementation**: Jump to the interface implementation. |
-| `<Leader>g[` / `g]`| Normal | **Diagnostics**: Jump to the previous/next error or warning. |
+| `<Leader>g[` / `g]`| Normal | **ALE diagnostics**: Jump to the previous/next error or warning. |
 | `<Leader>pd` | Normal | **Peek Definition**: View definition in a small popup without leaving current line. |
 
 ### 🤖 AI Assistance (Vim-AI / Gemini)

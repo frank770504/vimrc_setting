@@ -102,7 +102,7 @@ plugin could be used to enable LSP-based linting through ALE's UI if desired.
 
 ## Keybindings
 
-### LSP Buffer Mappings (active in Python buffers)
+### Buffer Mappings (active in Python buffers)
 
 | Mapping              | Function                        |
 |----------------------|---------------------------------|
@@ -117,8 +117,8 @@ plugin could be used to enable LSP-based linting through ALE's UI if desired.
 | `<Leader>gi`         | Go to implementation            |
 | `<Leader>gt`         | Go to type definition           |
 | `<Leader>gn`         | Rename symbol                   |
-| `<Leader>g[`         | Previous diagnostic             |
-| `<Leader>g]`         | Next diagnostic                 |
+| `<Leader>g[`         | Previous ALE diagnostic         |
+| `<Leader>g]`         | Next ALE diagnostic             |
 | `<Leader><Leader>`   | Hover (show doc/signature)      |
 | `<C-j>` / `<C-k>`   | Scroll hover popup              |
 
