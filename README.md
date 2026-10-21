@@ -154,6 +154,8 @@ ln -sf ~/vimrc_setting/autoload/airline/extensions/tabline/formatters/fugitive.v
    sudo apt install clangd astyle clang-tidy
    # uv (ALE python runner): https://docs.astral.sh/uv/
    ```
+   See [`doc/spec/cpp-lsp-usage.md`](doc/spec/cpp-lsp-usage.md) for the clangd
+   compiler-query configuration, its rationale, and compilation database setup.
 
 8. **AI providers** (optional; for `vim-ai`):
    ```bash

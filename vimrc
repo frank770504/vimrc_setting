@@ -487,6 +487,9 @@ endif
 " Disable pylsp-all auto-registration by vim-lsp-settings to avoid
 " duplicate diagnostics (our custom pylsp with ruff replaces it).
 let g:lsp_settings = get(g:, 'lsp_settings', {})
+" Use Ubuntu's clangd and query the compiler used by this machine's builds.
+let g:lsp_settings['clangd'] = get(g:lsp_settings, 'clangd', {})
+let g:lsp_settings['clangd']['cmd'] = ['/usr/bin/clangd', '--query-driver=/usr/bin/c++']
 let g:lsp_settings['pylsp-all'] = get(g:lsp_settings, 'pylsp-all', {})
 let g:lsp_settings['pylsp-all']['disabled'] = 1
 
@@ -687,6 +690,8 @@ let g:ale_fixers = {
 \   'cpp': ['astyle', 'clangtidy'],
 \}
 let g:ale_cpp_cc_executable = exepath("clangd")
+let g:ale_cpp_clangd_executable = '/usr/bin/clangd'
+let g:ale_cpp_clangd_options = '--query-driver=/usr/bin/c++'
 "let g:ale_exclude_highlights = ['line too long', 'E501', 'C0301']
 
 " ALE diagnostic highlights (clean underline/undercurl, no background box)
