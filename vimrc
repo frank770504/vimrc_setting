@@ -843,7 +843,10 @@ autocmd FileType aichat setlocal textwidth=85
 let g:markdown_fenced_languages = ['python', 'cpp', 'javascript', 'bash', 'html', 'json']
 
 " --- Diff Highlighting ---
-highlight DiffAdd    cterm=bold ctermfg=10 ctermbg=17 gui=none guifg=bg guibg=Red
-highlight DiffDelete cterm=bold ctermfg=10 ctermbg=17 gui=none guifg=bg guibg=Red
-highlight DiffChange cterm=bold ctermfg=10 ctermbg=17 gui=none guifg=bg guibg=Red
-highlight DiffText   cterm=bold ctermfg=10 ctermbg=88 gui=none guifg=bg guibg=Red
+" Each group is a high-contrast fg/bg pair on a dark tint:
+"   green  = added    red = deleted    blue = changed    bright blue = changed text
+" Light foregrounds guarantee readability regardless of syntax colors.
+highlight DiffAdd    cterm=NONE ctermfg=151 ctermbg=22  gui=NONE guifg=#a8e6b8 guibg=#1e3a2a
+highlight DiffDelete cterm=NONE ctermfg=210 ctermbg=52  gui=NONE guifg=#f0a8b4 guibg=#3d2027
+highlight DiffChange cterm=NONE ctermfg=153 ctermbg=17  gui=NONE guifg=#a9c7ee guibg=#1f2f47
+highlight DiffText   cterm=NONE ctermfg=231 ctermbg=24  gui=NONE guifg=#f2f7ff guibg=#2f517d
