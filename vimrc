@@ -9,6 +9,26 @@ augroup END
 filetype off                  " required by Vundle
 
 " =============================================================================
+" 1b. PLATFORM SETUP (Ubuntu/macOS)
+" =============================================================================
+" macOS: Homebrew tools may be missing from PATH when Vim is launched from
+" Launchpad/Finder (no shell rc sourcing). Prepend standard prefixes so
+" exepath()-based tool resolution (clangd, fzf, pylsp) finds them.
+if has('macunix')
+    for s:brew_bin in ['/opt/homebrew/bin', '/usr/local/bin']
+        if isdirectory(s:brew_bin) && stridx($PATH, s:brew_bin) < 0
+            let $PATH = s:brew_bin . ':' . $PATH
+        endif
+    endfor
+    " Homebrew LLVM (clangd, clang++) lives in its own opt prefix.
+    if isdirectory('/opt/homebrew/opt/llvm/bin')
+        let $PATH = '/opt/homebrew/opt/llvm/bin:' . $PATH
+    elseif isdirectory('/usr/local/opt/llvm/bin')
+        let $PATH = '/usr/local/opt/llvm/bin:' . $PATH
+    endif
+endif
+
+" =============================================================================
 " 2. PLUGIN MANAGEMENT (Vundle)
 " =============================================================================
 set rtp+=~/.vim/bundle/Vundle.vim
@@ -43,7 +63,9 @@ filetype plugin indent on    " required
 " 3. GENERAL EDITOR SETTINGS
 " =============================================================================
 set backspace=indent,eol,start
-set clipboard=unnamedplus
+if has('clipboard')
+    set clipboard=unnamedplus
+endif
 set mouse=a
 set hlsearch
 hi Search ctermbg=LightYellow ctermfg=Red
@@ -268,7 +290,9 @@ endfunction
 let g:airline_section_c = '%{CleanFugitivePath()}'
 
 if has("gui_running")
-  set guifont=MesloLGSDZForPowerline-Regular:h16
+  " GUI font is machine-specific; override it in ~/.vimrc.local. This is a
+  " neutral default that renders everywhere.
+  set guifont=Monaco:h14
 endif
 
 " Function to delete local branches already merged into current HEAD
@@ -771,7 +795,7 @@ inoremap <expr> <S-Tab> pumvisible() ? "\<C-p>" : "\<S-Tab>"
 inoremap <expr> <cr>    pumvisible() ? asyncomplete#close_popup() : "\<cr>"
 
 " --- Vim-AI ---
-let g:vim_ai_token_file_path = '~/.config/openai.token'
+let g:vim_ai_token_file_path = '~/.config/gemini.token'
 let g:vim_ai_roles_config_file = '~/.config/vim-ai-roles.ini'
 
 nnoremap <leader>a :AI /gemini<CR>
@@ -787,7 +811,7 @@ nnoremap <leader>r :AIRedo<CR>
 let s:initial_complete_prompt =<< trim END
 >>> system
 You are a general assistant.
-Answer shortly, consisely and only what you are asked.
+Answer shortly, concisely and only what you are asked.
 Do not provide any explanantion or comments if not requested.
 If you answer in a code, do not wrap it in markdown code block.
 END
@@ -869,3 +893,13 @@ highlight DiffAdd    cterm=NONE ctermfg=151 ctermbg=22  gui=NONE guifg=#a8e6b8 g
 highlight DiffDelete cterm=NONE ctermfg=210 ctermbg=52  gui=NONE guifg=#f0a8b4 guibg=#3d2027
 highlight DiffChange cterm=NONE ctermfg=153 ctermbg=17  gui=NONE guifg=#a9c7ee guibg=#1f2f47
 highlight DiffText   cterm=NONE ctermfg=231 ctermbg=24  gui=NONE guifg=#f2f7ff guibg=#2f517d
+
+" =============================================================================
+" N. MACHINE-LOCAL OVERRIDES
+" =============================================================================
+" Per-host settings (guifont, token paths, host-only tweaks) live in
+" ~/.vimrc.local so the repo config stays identical on every machine and can
+" be re-copied freely. install.sh creates a template there once.
+if filereadable(expand('~/.vimrc.local'))
+    source ~/.vimrc.local
+endif

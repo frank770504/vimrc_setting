@@ -167,6 +167,26 @@ deploy_config() {
     mkdir -p "$(dirname "$FORMATTER_DST")"
     cp "$FORMATTER_SRC" "$FORMATTER_DST"
     ok "Copied fugitive tabline formatter -> ~/.vim/autoload/airline/.../fugitive.vim"
+
+    # Machine-local overrides: created once, never overwritten.
+    if [[ -f $HOME/.vimrc.local ]]; then
+        ok "~/.vimrc.local already exists (left untouched)"
+    else
+        {
+            echo '" ~/.vimrc.local - machine-local overrides (never overwritten by install.sh)'
+            echo '" Anything here is sourced AFTER the repo vimrc, so it can override it.'
+            echo '" Re-copying the repo config will not touch this file.'
+            echo ''
+            echo '" Example: GUI font (font names/availability differ per machine)'
+            echo '" if has('"'"'gui_running'"'"')'
+            echo '"     set guifont=MesloLGSDZForPowerline-Regular:h16'
+            echo '" endif'
+            echo ''
+            echo '" Example: host-specific paths'
+            echo '" let g:vim_ai_token_file_path = '"'"'~/path/to/gemini.token'"'"''
+        } > "$HOME/.vimrc.local"
+        ok "Created ~/.vimrc.local template"
+    fi
 }
 
 install_plugins() {

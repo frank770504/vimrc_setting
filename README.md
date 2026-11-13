@@ -103,6 +103,11 @@ Or run the automated installer, which does both and installs the plugins:
 ~/vimrc_setting/install.sh
 ```
 
+`install.sh` also creates `~/.vimrc.local` once — a machine-local override
+file sourced after the repo config. Put host-specific settings there (GUI
+font, token paths, host-only tweaks); it is never overwritten, so re-running
+the installer or re-copying the vimrc is always safe.
+
 > **Note:** `g:airline#extensions#tabline#formatter = 'fugitive'` requires the
 > autoload file copied above. See
 > [`doc/spec/airline-fugitive-tabline.md`](doc/spec/airline-fugitive-tabline.md).
@@ -337,6 +342,13 @@ To see all files that changed between two points and iterate through them:
 ---
 
 ## 🐞 How to Debug
+
+### 0. Common Issues
+
+Known version-mismatch pitfalls and fixes (e.g. fzf `:Commands` failing with
+an "invalid border style" error when the bundled fzf binary is older than the
+plugin expects) are documented in
+[`doc/faq.md`](doc/faq.md).
 
 ### 1. LSP Logs
 If language features are not working, check the LSP log:
