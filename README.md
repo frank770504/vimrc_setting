@@ -88,26 +88,47 @@ Uses **Vundle** as the plugin manager.
 ```bash
 git clone https://github.com/your-username/vimrc_setting.git ~/vimrc_setting
 
-# Symlink the vimrc
-ln -sf ~/vimrc_setting/vimrc ~/.vimrc
+# Copy the vimrc into place (no symlink needed; re-copy after pulling updates)
+cp ~/vimrc_setting/vimrc ~/.vimrc
 
-# Symlink the custom airline tabline formatter (required for fugitive tab labels)
+# Copy the custom airline tabline formatter (required for fugitive tab labels)
 mkdir -p ~/.vim/autoload/airline/extensions/tabline/formatters
-ln -sf ~/vimrc_setting/autoload/airline/extensions/tabline/formatters/fugitive.vim \
+cp ~/vimrc_setting/autoload/airline/extensions/tabline/formatters/fugitive.vim \
   ~/.vim/autoload/airline/extensions/tabline/formatters/fugitive.vim
 ```
 
+Or run the automated installer, which does both and installs the plugins:
+
+```bash
+~/vimrc_setting/install.sh
+```
+
 > **Note:** `g:airline#extensions#tabline#formatter = 'fugitive'` requires the
-> autoload file symlinked above. See
+> autoload file copied above. See
 > [`doc/spec/airline-fugitive-tabline.md`](doc/spec/airline-fugitive-tabline.md).
 
-### Install on the machine
+### Dependencies (what `install.sh` installs)
+
+`install.sh` detects the OS and runs the commands below automatically
+(`install.sh --config-only` skips them). This section documents every
+dependency and why it exists, so the script and this README stay in sync.
 
 1. **Vim + git + curl** — Vim 8.2+ compiled with `+job`, `+channel`, `+lambda`,
-   `+clipboard`, and `+python3` (all used by LSP/ALE/asyncomplete/clipboard):
-   ```bash
-   sudo apt install vim git curl
-   ```
+   and `+clipboard` (and preferably `+python3`):
+   - macOS (Homebrew):
+     ```bash
+     brew install vim python fzf ripgrep llvm node uv astyle
+     eval "$(brew shellenv)"
+     export PATH="$(brew --prefix llvm)/bin:$PATH"
+     ```
+     Put the two environment lines in your shell startup file so the Homebrew
+     Vim and LLVM tools are used in future sessions. For Bash login shells,
+     ensure `~/.bash_profile` sources `~/.bashrc`. Homebrew Vim enables
+     `+python3` when Python is installed.
+   - Debian/Ubuntu Linux:
+     ```bash
+     sudo apt install vim git curl
+     ```
 
 2. **Vundle** (plugin manager):
    ```bash
@@ -115,55 +136,59 @@ ln -sf ~/vimrc_setting/autoload/airline/extensions/tabline/formatters/fugitive.v
    ```
 
 3. **fzf binary** (the `fzf` Vim plugin is only a wrapper):
-   ```bash
-   # Option A: install script (recommended)
-   git clone --depth 1 https://github.com/junegunn/fzf.git ~/.fzf
-   ~/.fzf/install --bin
-   # then add ~/.fzf/bin to your PATH in ~/.bashrc
+   - macOS: install with Homebrew (`brew install fzf`, included in step 1).
+   - Linux: install using the upstream script or your distro package:
+     ```bash
+     git clone --depth 1 https://github.com/junegunn/fzf.git ~/.fzf
+     ~/.fzf/install --bin
+     # Add ~/.fzf/bin to PATH in your shell startup file.
+     # Or: sudo apt install fzf
+     ```
+   The vimrc no longer contains a machine-specific fzf path; the executable
+   should be available on `PATH`.
 
-   # Option B: distro package
-   sudo apt install fzf
-   ```
-   > **Note:** the vimrc hardcodes `set rtp+=/home/ywchen/.fzf/bin/fzf` —
-   > change it to your own `$HOME` if it differs.
+4. **ripgrep** (for `<Leader>ps` / `:Rg`): install with Homebrew on macOS
+   (`brew install ripgrep`, included above) or `sudo apt install ripgrep` on
+   Debian/Ubuntu.
 
-4. **ripgrep** (for `<Leader>ps` / `:Rg`):
-   ```bash
-   sudo apt install ripgrep
-   ```
-
-5. **Node.js + npm** (for `markdown-preview.nvim`):
-   ```bash
-   sudo apt install nodejs npm
-   ```
+5. **Node.js + npm** (for `markdown-preview.nvim`): install with Homebrew on
+   macOS (`brew install node`, included above) or `sudo apt install nodejs npm`
+   on Debian/Ubuntu.
 
 6. **Python LSP** (for Python IDE features; the vimrc auto-detects `.venv`,
    `CONDA_PREFIX`, `~/.local/bin`, or `pylsp` on `PATH`):
    ```bash
-   # In the project venv, or globally:
-   pip install python-lsp-server python-lsp-ruff
+   # Install a user-level server and the optional Ruff plugin:
+   uv tool install --python 3.13 --with python-lsp-ruff python-lsp-server
+   # Or install into a project environment:
+   uv add --dev python-lsp-server python-lsp-ruff
    ```
    See [`doc/spec/python-lsp-usage.md`](doc/spec/python-lsp-usage.md) for how
    ruff config is auto-detected.
 
 7. **ALE linters** (optional, per language):
    ```bash
-   # Python (ALE runs pylint via uv)
-   pip install pylint flake8 pycodestyle
-   # C/C++
+   # Python (add these to the project environment used by ALE/uv)
+   uv add --dev pylint flake8 pycodestyle
+   # C/C++ on Debian/Ubuntu; macOS tools are included in step 1
    sudo apt install clangd astyle clang-tidy
-   # uv (ALE python runner): https://docs.astral.sh/uv/
+   # uv (ALE Python runner): https://docs.astral.sh/uv/
    ```
    See [`doc/spec/cpp-lsp-usage.md`](doc/spec/cpp-lsp-usage.md) for the clangd
    compiler-query configuration, its rationale, and compilation database setup.
 
-8. **AI providers** (optional; for `vim-ai`):
-   ```bash
-   # OpenAI token (referenced by g:vim_ai_token_file_path)
-   echo "sk-..." > ~/.config/openai.token
-   # Optional roles file
-   touch ~/.config/vim-ai-roles.ini
-   ```
+8. **AI provider** (optional; the configured mappings use Gemini):
+   - Set `GEMINI_API_KEY` in your shell environment, or save the key in
+     `~/.config/gemini.token` and make sure `~/.config/vim-ai-roles.ini` has:
+     ```ini
+     [gemini]
+     provider = google
+     options.model = gemini-2.0-flash
+     options.endpoint_url = https://generativelanguage.googleapis.com/v1beta/models
+     options.token_file_path = ~/.config/gemini.token
+     ```
+   - The role file is required for the `<Leader>a`, `<Leader>s`, and chat
+     mappings that invoke `/gemini`. Do not commit API keys.
 
 9. **Install the plugins** — open Vim and run:
    ```vim

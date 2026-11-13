@@ -138,13 +138,13 @@ formatter was introduced.
 ## Debug logging
 
 `FugitiveDebugLog()` writes timestamped messages to
-`/home/ywchen/vim_airline_debug.log` when `g:fugitive_debug` is `1`
-(default `0`). Consecutive identical messages are deduped to avoid redraw spam.
+`~/vim_airline_debug.log` when `g:fugitive_debug` is `1` (default `0`).
+Consecutive identical messages are deduped to avoid redraw spam.
 
 | Setting | Default | Purpose |
 |---------|---------|---------|
 | `g:fugitive_debug` | `0` | Master switch for debug logging |
-| log path | `/home/ywchen/vim_airline_debug.log` | Output file |
+| log path | `~/vim_airline_debug.log` | Output file |
 
 Logged stages: `formatter`, `FugitiveTabParse`, `FugitiveTabLabel`,
 `CleanFugitivePath` — including raw `bufname('%')`, `expand('%:p')`, parsed
