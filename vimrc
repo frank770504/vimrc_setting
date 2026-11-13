@@ -3,13 +3,15 @@
 " =============================================================================
 set encoding=utf-8
 set nocompatible              " be iMproved, required
-filetype off                  " required
+" Ensure the group exists before Vim's filetype-off script clears it.
+augroup filetypedetect
+augroup END
+filetype off                  " required by Vundle
 
 " =============================================================================
 " 2. PLUGIN MANAGEMENT (Vundle)
 " =============================================================================
 set rtp+=~/.vim/bundle/Vundle.vim
-set rtp+=/home/ywchen/.fzf/bin/fzf
 
 call vundle#begin()
 
@@ -487,9 +489,22 @@ endif
 " Disable pylsp-all auto-registration by vim-lsp-settings to avoid
 " duplicate diagnostics (our custom pylsp with ruff replaces it).
 let g:lsp_settings = get(g:, 'lsp_settings', {})
-" Use Ubuntu's clangd and query the compiler used by this machine's builds.
+" Use the clangd and compiler available on this machine's PATH.
 let g:lsp_settings['clangd'] = get(g:lsp_settings, 'clangd', {})
-let g:lsp_settings['clangd']['cmd'] = ['/usr/bin/clangd', '--query-driver=/usr/bin/c++']
+" Resolve the installed LLVM tools from PATH on Linux, macOS, or Homebrew.
+let s:clangd = exepath('clangd')
+if empty(s:clangd)
+    let s:clangd = 'clangd'
+endif
+let s:cpp_compiler = exepath('clang++')
+if empty(s:cpp_compiler)
+    let s:cpp_compiler = exepath('c++')
+endif
+let s:clangd_cmd = [s:clangd]
+if !empty(s:cpp_compiler)
+    call add(s:clangd_cmd, '--query-driver=' . s:cpp_compiler)
+endif
+let g:lsp_settings['clangd']['cmd'] = s:clangd_cmd
 let g:lsp_settings['pylsp-all'] = get(g:lsp_settings, 'pylsp-all', {})
 let g:lsp_settings['pylsp-all']['disabled'] = 1
 
@@ -689,9 +704,13 @@ let g:ale_fixers = {
 \   '*': ['remove_trailing_lines', 'trim_whitespace'],
 \   'cpp': ['astyle', 'clangtidy'],
 \}
-let g:ale_cpp_cc_executable = exepath("clangd")
-let g:ale_cpp_clangd_executable = '/usr/bin/clangd'
-let g:ale_cpp_clangd_options = '--query-driver=/usr/bin/c++'
+let s:clang = exepath('clang')
+if empty(s:clang)
+    let s:clang = 'clang'
+endif
+let g:ale_cpp_cc_executable = s:clang
+let g:ale_cpp_clangd_executable = s:clangd
+let g:ale_cpp_clangd_options = empty(s:cpp_compiler) ? '' : '--query-driver=' . s:cpp_compiler
 "let g:ale_exclude_highlights = ['line too long', 'E501', 'C0301']
 
 " ALE diagnostic highlights (clean underline/undercurl, no background box)
