@@ -164,9 +164,16 @@ deploy_config() {
     ok "Copied $(basename "$VIMRC_SRC") -> ~/.vimrc"
 
     # The airline fugitive formatter must live on the runtime path.
-    mkdir -p "$(dirname "$FORMATTER_DST")"
-    cp "$FORMATTER_SRC" "$FORMATTER_DST"
-    ok "Copied fugitive tabline formatter -> ~/.vim/autoload/airline/.../fugitive.vim"
+    # If it is already a symlink into this repo, leave it as-is: a plain cp
+    # would replace the symlink with a static copy and future repo updates
+    # (git pull) would no longer reach ~/.vim.
+    if [[ -L $FORMATTER_DST ]]; then
+        ok "Formatter is a symlink into the repo (left as-is)"
+    else
+        mkdir -p "$(dirname "$FORMATTER_DST")"
+        cp "$FORMATTER_SRC" "$FORMATTER_DST"
+        ok "Copied fugitive tabline formatter -> ~/.vim/autoload/airline/.../fugitive.vim"
+    fi
 
     # Machine-local overrides: created once, never overwritten.
     if [[ -f $HOME/.vimrc.local ]]; then
